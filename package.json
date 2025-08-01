@@ -1,10 +1,10 @@
 {
   "name": "google-places-proxy",
   "version": "1.0.0",
-  "description": "",
+  "description": "A proxy server for Google Places API",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -15,19 +15,5 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0"
-  },
-    {
-      "name": "google-places-proxy",
-      "version": "1.0.0",
-      "main": "index.js",
-      "scripts": {
-        "start": "node index.js"
-      },
-      "dependencies": {
-        "axios": "^1.6.0",
-        "cors": "^2.8.5",
-        "dotenv": "^16.0.0",
-        "express": "^4.18.2"
-      }
-    }
+  }
 }
