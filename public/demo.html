@@ -156,11 +156,11 @@
         const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1); // placeholder rating
         return `
           <div class="place" onclick="openVideo('${place.place_id}')">
-            <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
+            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
             <strong>${place.name}</strong><br/>
             ${place.vicinity || ''}<br/>
+            <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
             Google: ⭐ ${place.rating || 'N/A'}
-            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
           </div>
         `;
       }).join('');
