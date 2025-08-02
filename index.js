@@ -25,8 +25,6 @@ app.get('/demo', (req, res) => {
   });
 });
 
-
-
 app.get('/api/google-places-all', async (req, res) => {
   const { keyword = 'mexican food', page = 1, limit = 20 } = req.query;
   const pageNum = parseInt(page);
