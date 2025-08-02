@@ -31,46 +31,45 @@
   <h1>🌮 Mexican Food Near San Diego</h1>
   <div id="results">Loading...</div>
 
-  <script>
-    const BASE_URL = '/api/google-places';
-    const lat = 32.7157;
-    const lng = -117.1611;
-    const keyword = 'mexican food';
+<script>
+  const endpoint = '/api/google-places-all?keyword=mexican+food';
+  fetch(endpoint)
+    .then(res => res.json())
+    .then(data => {
+      const all = data.results;
+      const perPage = 20;
+      let page = 0;
 
-    fetch(`${BASE_URL}?lat=${lat}&lng=${lng}&keyword=${encodeURIComponent(keyword)}`)
-      .then(res => res.json())
-      .then(data => {
-        const container = document.getElementById('results');
-        if (!data.results || data.results.length === 0) {
-          container.innerHTML = '<p>No results found.</p>';
-          return;
-        }
-
-        container.innerHTML = '';
-        data.results.forEach(place => {
-          const photoRef = place.photos?.[0]?.photo_reference;
-          const photoUrl = photoRef
-            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoRef}&key=YOUR_GOOGLE_API_KEY`
-            : null;
-
-          container.innerHTML += `
+      function renderPage() {
+        const slice = all.slice(page * perPage, (page+1)*perPage);
+        document.getElementById('results').innerHTML = slice.map(p => {
+          const photo = p.photos?.[0]?.photo_reference;
+          const photoUrl = photo
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${photo}&key=YOUR_KEY`
+            : '';
+          return `
             <div class="place">
-              <div class="row">
-                ${photoUrl ? `<img src="${photoUrl}" class="thumbnail" />` : ''}
-                <div>
-                  <strong>${place.name}</strong><br/>
-                  ${place.vicinity}<br/>
-                  ⭐ ${place.rating || 'N/A'}
-                </div>
-              </div>
+              <strong>${p.name}</strong><br/>
+              ${p.vicinity}<br/>
+              ⭐ ${p.rating || 'N/A'}<br/>
+              ${photoUrl ? `<img src="${photoUrl}" class="thumbnail"/>` : ''}
             </div>
           `;
-        });
-      })
-      .catch(err => {
-        document.getElementById('results').innerHTML = '<p>Error loading places.</p>';
-        console.error(err);
-      });
-  </script>
+        }).join('');
+        document.getElementById('controls').innerHTML = `
+          <button ${page===0?'disabled':''} onclick="prev()">Prev</button>
+          Page ${page+1} of ${Math.ceil(all.length/perPage)}
+          <button ${ (page+1)*perPage >= all.length ?'disabled':'' } onclick="next()">Next</button>
+        `;
+      }
+
+      window.next = () => { page++; renderPage(); };
+      window.prev = () => { page--; renderPage(); };
+
+      renderPage();
+    });
+</script>
+<div id="controls"></div>
+
 </body>
 </html>
