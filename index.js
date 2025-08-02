@@ -30,13 +30,13 @@ app.get('/api/google-places-all', async (req, res) => {
   const pageNum = parseInt(page);
   const limitNum = parseInt(limit);
 
-  const centers = [
-    { lat: 32.7157, lng: -117.1611 },
-    { lat: 33.1192, lng: -117.0864 },
-    { lat: 32.5521, lng: -117.0452 },
-    { lat: 32.8336, lng: -116.7664 },
-    { lat: 32.7767, lng: -117.0713 },
-  ];
+const centers = [
+  { lat: 32.7157, lng: -117.1611, name: 'Downtown San Diego' },
+  { lat: 33.1192, lng: -117.0864, name: 'Escondido' },
+  { lat: 32.5521, lng: -117.0452, name: 'Chula Vista' },
+  { lat: 32.8336, lng: -116.7664, name: 'Alpine' },
+  { lat: 32.7767, lng: -117.0713, name: 'Normal Heights' },
+];
 
   const allResults = [];
 

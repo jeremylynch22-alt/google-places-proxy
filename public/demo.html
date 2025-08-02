@@ -114,9 +114,14 @@
       <option value="4">4+</option>
       <option value="4.5">4.5+</option>
     </select>
-    <select id="filter-city">
-      <option value="">All Cities</option>
-    </select>
+	<select id="filter-city">
+	  <option value="">All Areas</option>
+	  <option value="Downtown San Diego">Downtown San Diego</option>
+	  <option value="Escondido">Escondido</option>
+	  <option value="Chula Vista">Chula Vista</option>
+	  <option value="Alpine">Alpine</option>
+	  <option value="Normal Heights">Normal Heights</option>
+	</select>
     <button onclick="toggleView()">🗺️ Toggle Map View</button>
   </div>
 
@@ -159,25 +164,36 @@
         });
     }
 
-    function renderResults() {
-      const html = currentResults.map(place => {
-        const photoUrl = place.photoUrl;
-        const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1); // placeholder
-        return `
-          <div class="place" onclick="openVideo('${place.place_id}')">
-            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
-            <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
-            <strong>${place.name}</strong><br/>
-            ${place.vicinity || ''}<br/>
-            Google: ⭐ ${place.rating || 'N/A'}
-          </div>
-        `;
-      }).join('');
+	function renderResults() {
+	  const cityFilter = document.getElementById('filter-city').value.toLowerCase();
+	
+	  const html = currentResults
+	    .filter(place => {
+	      const matchesCity = cityFilter
+	        ? (place.vicinity?.toLowerCase().includes(cityFilter) || place.name?.toLowerCase().includes(cityFilter))
+	        : true;
+	      return matchesCity;
+	    })
+	    .map(place => {
+	      const photoUrl = place.photoUrl;
+	      const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1); // placeholder
+	
+	      return `
+	        <div class="place" onclick="openVideo('${place.place_id}')">
+	          <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
+	          <strong>${place.name}</strong><br/>
+	          ${place.vicinity || ''}<br/>
+	          Google: ⭐ ${place.rating || 'N/A'}
+	          ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
+	        </div>
+	      `;
+	    }).join('');
+	
+	  document.getElementById('results').innerHTML = html;
+	  document.getElementById('loading').style.display = 'none';
+	  renderControls();
+	}
 
-      document.getElementById('results').innerHTML = html;
-      document.getElementById('loading').style.display = 'none';
-      renderControls();
-    }
 
     function renderControls() {
       document.getElementById('controls').innerHTML = `
