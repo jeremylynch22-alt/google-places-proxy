@@ -5,103 +5,69 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
+const port = process.env.PORT || 5001;
+
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve /demo route
 app.get('/demo', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/demo.html'));
 });
 
-
-// Health check route
-app.get('/', (req, res) => {
-  res.send('✅ Google Places Proxy is running');
-});
-
-// Single-point nearby search
-app.get('/api/google-places', async (req, res) => {
-  const { lat, lng, keyword } = req.query;
-
-  try {
-    const response = await axios.get(
-      'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
-      {
-        params: {
-          location: `${lat},${lng}`,
-          radius: 15000, // Extended radius
-          keyword: keyword || 'mexican food',
-          type: 'restaurant',
-          key: process.env.GOOGLE_API_KEY,
-        },
-      }
-    );
-    res.json(response.data);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Error fetching Google Places data');
-  }
-});
-
-// Multi-point search for entire San Diego County
 app.get('/api/google-places-all', async (req, res) => {
   const { keyword = 'mexican food' } = req.query;
 
   const centers = [
-    { lat: 32.7157, lng: -117.1611 },   // Downtown San Diego
-    { lat: 33.1192, lng: -117.0864 },   // North County (Escondido)
-    { lat: 32.5521, lng: -117.0452 },   // South Bay (Chula Vista)
-    { lat: 32.8336, lng: -116.7664 },   // East County (Alpine)
-    { lat: 32.7767, lng: -117.0713 },   // Mid-City (San Diego State)
+    { lat: 32.7157, lng: -117.1611 }, // Downtown SD
+    { lat: 33.1192, lng: -117.0864 }, // Escondido
+    { lat: 32.5521, lng: -117.0452 }, // Chula Vista
+    { lat: 32.8336, lng: -116.7664 }, // Alpine
+    { lat: 32.7767, lng: -117.0713 }, // Normal Heights
   ];
 
   const allResults = [];
 
-  for (const c of centers) {
-    let pagetoken = '';
-    let pages = 0;
-
-    do {
-      const params = {
-        location: `${c.lat},${c.lng}`,
-        radius: 50000, // Max radius allowed
-        keyword,
-        type: 'restaurant',
-        key: process.env.GOOGLE_API_KEY,
-      };
-      if (pagetoken) params.pagetoken = pagetoken;
-
-      try {
-        const resp = await axios.get(
-          'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
-          { params }
-        );
-
-        const data = resp.data;
-        if (data.results) allResults.push(...data.results);
-        pagetoken = data.next_page_token;
-        pages++;
-
-        // Wait before fetching next page
-        if (pagetoken) {
-          await new Promise((r) => setTimeout(r, 2000));
+  await Promise.all(centers.map(async (c) => {
+    try {
+      const response = await axios.get(
+        'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
+        {
+          params: {
+            location: `${c.lat},${c.lng}`,
+            radius: 50000,
+            keyword,
+            type: 'restaurant',
+            key: process.env.GOOGLE_API_KEY,
+          },
         }
-      } catch (error) {
-        console.error(`Error at ${c.lat},${c.lng}:`, error.message);
-        break;
+      );
+
+      if (response.data.results) {
+        response.data.results.forEach(place => {
+          const photoRef = place.photos?.[0]?.photo_reference;
+          place.photoUrl = photoRef
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoRef}&key=${process.env.GOOGLE_PHOTO_API_KEY}`
+            : null;
+          allResults.push(place);
+        });
       }
-    } while (pagetoken && pages < 3);
-  }
+    } catch (err) {
+      console.error(`Error from ${c.lat},${c.lng}:`, err.message);
+    }
+  }));
 
   // Deduplicate by place_id
-  const uniqueResults = Object.values(
+  const unique = Object.values(
     allResults.reduce((acc, place) => {
       acc[place.place_id] = place;
       return acc;
     }, {})
   );
 
-  res.json({ results: uniqueResults });
+  res.json({ results: unique });
 });
 
-// Start the server
-const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => console.log(`Google Places proxy running on port ${PORT}`));
+app.listen(port, () => {
+  console.log(`Google Places proxy running on port ${port}`);
+});
