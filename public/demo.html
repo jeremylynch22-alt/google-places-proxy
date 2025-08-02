@@ -67,6 +67,16 @@
       height: 100%;
       border: none;
     }
+    #loading {
+      text-align: center;
+      font-size: 2rem;
+      display: none;
+      animation: bounce 1s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
     button {
       padding: 0.5rem 1rem;
       font-size: 1rem;
@@ -75,7 +85,7 @@
   </style>
 </head>
 <body>
-  <h1>Jerberto's 🌮 San Diego Mexican Food Finder</h1>
+  <h1>🌮 San Diego Mexican Food Finder</h1>
 
   <div id="filters">
     <input type="text" id="filter-name" placeholder="Search by name" />
@@ -90,7 +100,8 @@
     <button onclick="toggleView()">🗺️ Toggle Map View</button>
   </div>
 
-  <div id="results">Loading...</div>
+  <div id="loading">🌯 Loading...</div>
+  <div id="results"></div>
   <div id="map"></div>
   <div id="controls"></div>
 
@@ -100,91 +111,70 @@
   </div>
 
   <script>
-    const endpoint = '/api/google-places-all?keyword=mexican+food';
-    let allResults = [];
-    let filteredResults = [];
-    let currentPage = 0;
+    let currentPage = 1;
     const perPage = 20;
-    let map, markers = [];
+    let totalPages = 1;
+    let currentResults = [];
 
-    fetch(endpoint)
-      .then(res => res.json())
-      .then(data => {
-        allResults = data.results || [];
-        populateCities();
-        applyFilters();
-      });
+    function fetchPage() {
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('loading').style.display = 'block';
 
-    function populateCities() {
-      const citySet = new Set(allResults.map(p => (p.vicinity || '').split(',').pop().trim()));
-      const citySelect = document.getElementById('filter-city');
-      citySet.forEach(city => {
-        const option = document.createElement('option');
-        option.value = city;
-        option.textContent = city;
-        citySelect.appendChild(option);
-      });
+      const endpoint = `/api/google-places-all?page=${currentPage}&limit=${perPage}`;
+
+      fetch(endpoint)
+        .then(res => res.json())
+        .then(data => {
+          currentResults = data.results || [];
+          totalPages = data.totalPages || 1;
+          renderResults();
+        })
+        .catch(err => {
+          document.getElementById('results').innerHTML = `<p>Error: ${err.message}</p>`;
+          document.getElementById('loading').style.display = 'none';
+        });
     }
 
-    document.getElementById('filter-name').addEventListener('input', applyFilters);
-    document.getElementById('filter-rating').addEventListener('change', applyFilters);
-    document.getElementById('filter-city').addEventListener('change', applyFilters);
-
-    function applyFilters() {
-      const name = document.getElementById('filter-name').value.toLowerCase();
-      const rating = parseFloat(document.getElementById('filter-rating').value);
-      const city = document.getElementById('filter-city').value;
-
-      filteredResults = allResults.filter(place => {
-        const matchesName = place.name.toLowerCase().includes(name);
-        const matchesRating = !rating || place.rating >= rating;
-        const matchesCity = !city || (place.vicinity || '').includes(city);
-        return matchesName && matchesRating && matchesCity;
-      });
-
-      currentPage = 0;
-      renderPage();
-    }
-
-    function renderPage() {
-      const start = currentPage * perPage;
-      const end = start + perPage;
-      const pageResults = filteredResults.slice(start, end);
-
-      const html = pageResults.map(place => {
+    function renderResults() {
+      const html = currentResults.map(place => {
         const photoUrl = place.photoUrl;
-        const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1); // placeholder rating
+        const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1); // placeholder
         return `
           <div class="place" onclick="openVideo('${place.place_id}')">
-            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
+            <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
             <strong>${place.name}</strong><br/>
             ${place.vicinity || ''}<br/>
-            <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
             Google: ⭐ ${place.rating || 'N/A'}
+            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
           </div>
         `;
       }).join('');
 
       document.getElementById('results').innerHTML = html;
+      document.getElementById('loading').style.display = 'none';
+      renderControls();
+    }
 
-      const totalPages = Math.ceil(filteredResults.length / perPage);
+    function renderControls() {
       document.getElementById('controls').innerHTML = `
-        <button onclick="prevPage()" ${currentPage === 0 ? 'disabled' : ''}>⬅️ Prev</button>
-        Page ${currentPage + 1} of ${totalPages}
-        <button onclick="nextPage()" ${currentPage + 1 === totalPages ? 'disabled' : ''}>Next ➡️</button>
+        <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>⬅️ Prev</button>
+        Page ${currentPage} of ${totalPages}
+        <button onclick="nextPage()" ${currentPage === totalPages ? 'disabled' : ''}>Next ➡️</button>
       `;
-
-      updateMap(pageResults);
     }
 
     function nextPage() {
-      currentPage++;
-      renderPage();
+      if (currentPage < totalPages) {
+        currentPage++;
+        fetchPage();
+      }
     }
 
     function prevPage() {
-      currentPage--;
-      renderPage();
+      if (currentPage > 1) {
+        currentPage--;
+        fetchPage();
+      }
     }
 
     function toggleView() {
@@ -195,30 +185,7 @@
       mapDiv.style.display = isMap ? 'none' : 'block';
     }
 
-    function updateMap(places) {
-      if (!map) {
-        map = new google.maps.Map(document.getElementById('map'), {
-          zoom: 10,
-          center: { lat: 32.7157, lng: -117.1611 }
-        });
-      }
-
-      markers.forEach(m => m.setMap(null));
-      markers = places.map(place => {
-        const loc = place.geometry?.location;
-        if (!loc) return null;
-        const marker = new google.maps.Marker({
-          position: loc,
-          map,
-          title: place.name
-        });
-        marker.addListener('click', () => openVideo(place.place_id));
-        return marker;
-      }).filter(Boolean);
-    }
-
     function openVideo(placeId) {
-      // TODO: replace with database fetch
       const dummyVideo = "https://www.youtube.com/embed/dQw4w9WgXcQ";
       document.getElementById('video-frame').src = dummyVideo;
       document.getElementById('video-modal').style.display = 'block';
@@ -228,8 +195,10 @@
       document.getElementById('video-frame').src = '';
       document.getElementById('video-modal').style.display = 'none';
     }
+
+    window.onload = fetchPage;
   </script>
 
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_BROWSER_API_KEY&callback=renderPage"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_BROWSER_API_KEY&callback=renderResults"></script>
 </body>
 </html>
