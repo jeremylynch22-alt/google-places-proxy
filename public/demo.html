@@ -1,75 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>🌮 Mexican Food Near You</title>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <title>JeRBertos - San Diego Mexican Food Finder</title>
   <style>
     body {
-      font-family: sans-serif;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      background: #f9f9f9;
+      color: #333;
     }
     h1 {
-      margin-bottom: 10px;
+      text-align: center;
+    }
+    #results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
     }
     .place {
-      border-bottom: 1px solid #ccc;
-      padding: 10px 0;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
-    .thumbnail {
-      width: 100px;
-      height: auto;
-      border-radius: 6px;
-      margin-right: 10px;
+    .place img {
+      max-width: 100%;
+      border-radius: 4px;
+      margin-top: 0.5rem;
     }
-    .row {
-      display: flex;
-      align-items: center;
+    #controls {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      margin: 0 0.5rem;
+      font-size: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>🌮 Mexican Food Near San Diego</h1>
+  <h1>🌮 San Diego Mexican Food Finder</h1>
   <div id="results">Loading...</div>
+  <div id="controls"></div>
 
-<script>
-  const endpoint = '/api/google-places-all?keyword=mexican+food';
-  fetch(endpoint)
-    .then(res => res.json())
-    .then(data => {
-      const all = data.results;
-      const perPage = 20;
-      let page = 0;
+  <script>
+    const endpoint = '/api/google-places-all?keyword=mexican+food';
+    let allResults = [];
+    let currentPage = 0;
+    const perPage = 20;
 
-      function renderPage() {
-        const slice = all.slice(page * perPage, (page+1)*perPage);
-        document.getElementById('results').innerHTML = slice.map(p => {
-          const photo = p.photos?.[0]?.photo_reference;
-          const photoUrl = photo
-            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=200&photoreference=${photo}&key=YOUR_KEY`
-            : '';
-          return `
-            <div class="place">
-              <strong>${p.name}</strong><br/>
-              ${p.vicinity}<br/>
-              ⭐ ${p.rating || 'N/A'}<br/>
-              ${photoUrl ? `<img src="${photoUrl}" class="thumbnail"/>` : ''}
-            </div>
-          `;
-        }).join('');
-        document.getElementById('controls').innerHTML = `
-          <button ${page===0?'disabled':''} onclick="prev()">Prev</button>
-          Page ${page+1} of ${Math.ceil(all.length/perPage)}
-          <button ${ (page+1)*perPage >= all.length ?'disabled':'' } onclick="next()">Next</button>
+    fetch(endpoint)
+      .then(res => res.json())
+      .then(data => {
+        allResults = data.results || [];
+        renderPage();
+      })
+      .catch(err => {
+        document.getElementById('results').innerHTML = `<p>Error loading data: ${err.message}</p>`;
+      });
+
+    function renderPage() {
+      const start = currentPage * perPage;
+      const end = start + perPage;
+      const pageResults = allResults.slice(start, end);
+
+      const html = pageResults.map(place => {
+        const photoUrl = place.photoUrl;
+        return `
+          <div class="place">
+            <strong>${place.name}</strong><br/>
+            ${place.vicinity || ''}<br/>
+            ⭐ ${place.rating || 'N/A'}
+            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
+          </div>
         `;
-      }
+      }).join('');
 
-      window.next = () => { page++; renderPage(); };
-      window.prev = () => { page--; renderPage(); };
+      document.getElementById('results').innerHTML = html;
 
+      const totalPages = Math.ceil(allResults.length / perPage);
+      document.getElementById('controls').innerHTML = `
+        <button onclick="prevPage()" ${currentPage === 0 ? 'disabled' : ''}>⬅️ Prev</button>
+        Page ${currentPage + 1} of ${totalPages}
+        <button onclick="nextPage()" ${currentPage + 1 === totalPages ? 'disabled' : ''}>Next ➡️</button>
+      `;
+    }
+
+    function nextPage() {
+      currentPage++;
       renderPage();
-    });
-</script>
-<div id="controls"></div>
+    }
 
+    function prevPage() {
+      currentPage--;
+      renderPage();
+    }
+  </script>
 </body>
 </html>
