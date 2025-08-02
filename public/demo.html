@@ -108,14 +108,16 @@
   <h1>Jerbertos 🌮 San Diego Mexican Food Finder</h1>
 
   <div id="filters">
-    <input type="text" id="filter-name" placeholder="Search by name" />
-    <select id="filter-rating">
-      <option value="">All Ratings</option>
-      <option value="4">4+</option>
-      <option value="4.5">4.5+</option>
-    </select>
-	<select id="filter-city">
-	  <option value="">All Areas</option>
+	<select id="filter-rating" onchange="applyFilters()">
+	  <option value="">All Ratings</option>
+	  <option value="4">4+</option>
+	  <option value="4.5">4.5+</option>
+	</select>
+	
+	<input type="text" id="filter-name" placeholder="Search by name" oninput="applyFilters()" />
+
+	<select id="filter-city" onchange="applyFilters()">
+	  <option value="">All Cities</option>
 	  <option value="Downtown San Diego">Downtown San Diego</option>
 	  <option value="Escondido">Escondido</option>
 	  <option value="Chula Vista">Chula Vista</option>
@@ -145,55 +147,61 @@
 	let markers = [];
 
 
-    function fetchPage() {
-      document.getElementById('results').innerHTML = '';
-      document.getElementById('loading').style.display = 'block';
-
-      const endpoint = `/api/google-places-all?page=${currentPage}&limit=${perPage}`;
-
-      fetch(endpoint)
-        .then(res => res.json())
-        .then(data => {
-          currentResults = data.results || [];
-          totalPages = data.totalPages || 1;
-          renderResults();
-        })
-        .catch(err => {
-          document.getElementById('results').innerHTML = `<p>Error: ${err.message}</p>`;
-          document.getElementById('loading').style.display = 'none';
-        });
-    }
-
-	function renderResults() {
-	  const cityFilter = document.getElementById('filter-city').value.toLowerCase();
+	function fetchPage() {
+	  document.getElementById('results').innerHTML = '';
+	  document.getElementById('loading').style.display = 'block';
 	
-	  const html = currentResults
-	    .filter(place => {
-	      const matchesCity = cityFilter
-	        ? (place.vicinity?.toLowerCase().includes(cityFilter) || place.name?.toLowerCase().includes(cityFilter))
-	        : true;
-	      return matchesCity;
+	  fetch(`/api/google-places-all?page=${currentPage}&limit=100`)
+	    .then(res => res.json())
+	    .then(data => {
+	      currentResults = data.results || [];
+	      applyFilters(); // ← now applies filters right after fetch
 	    })
-	    .map(place => {
-	      const photoUrl = place.photoUrl;
-	      const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1); // placeholder
+	    .catch(err => {
+	      document.getElementById('results').innerHTML = `<p>Error: ${err.message}</p>`;
+	      document.getElementById('loading').style.display = 'none';
+	    });
+	}
+
+
+	function applyFilters() {
+	  const city = document.getElementById('filter-city').value.toLowerCase();
+	  const minRating = parseFloat(document.getElementById('filter-rating').value) || 0;
+	  const nameFilter = document.getElementById('filter-name').value.toLowerCase();
 	
-	      return `
-	        <div class="place" onclick="openVideo('${place.place_id}')">
-	          <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
-	          <strong>${place.name}</strong><br/>
-	          ${place.vicinity || ''}<br/>
-	          Google: ⭐ ${place.rating || 'N/A'}
-	          ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
-	        </div>
-	      `;
-	    }).join('');
+	  const filtered = currentResults.filter(place => {
+	    const nameMatch = nameFilter ? place.name?.toLowerCase().includes(nameFilter) : true;
+	    const cityMatch = city ? place.vicinity?.toLowerCase().includes(city) : true;
+	    const ratingMatch = place.rating ? place.rating >= minRating : false;
+	    return nameMatch && cityMatch && ratingMatch;
+	  });
+	
+	  renderFilteredResults(filtered);
+	}
+	
+	function renderFilteredResults(filteredList) {
+	  const start = (currentPage - 1) * perPage;
+	  const paginated = filteredList.slice(start, start + perPage);
+	  totalPages = Math.ceil(filteredList.length / perPage);
+	
+	  const html = paginated.map(place => {
+	    const photoUrl = place.photoUrl;
+	    const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1);
+	    return `
+	      <div class="place" onclick="openVideo('${place.place_id}')">
+	        <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
+	        <strong>${place.name}</strong><br/>
+	        ${place.vicinity || ''}<br/>
+	        Google: ⭐ ${place.rating || 'N/A'}
+	        ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
+	      </div>
+	    `;
+	  }).join('');
 	
 	  document.getElementById('results').innerHTML = html;
 	  document.getElementById('loading').style.display = 'none';
 	  renderControls();
 	}
-
 
     function renderControls() {
       document.getElementById('controls').innerHTML = `
@@ -203,19 +211,19 @@
       `;
     }
 
-    function nextPage() {
-      if (currentPage < totalPages) {
-        currentPage++;
-        fetchPage();
-      }
-    }
-
-    function prevPage() {
-      if (currentPage > 1) {
-        currentPage--;
-        fetchPage();
-      }
-    }
+	function nextPage() {
+	  if (currentPage < totalPages) {
+	    currentPage++;
+	    applyFilters();
+	  }
+	}
+	
+	function prevPage() {
+	  if (currentPage > 1) {
+	    currentPage--;
+	    applyFilters();
+	  }
+	}
 
 	function toggleView() {
 	  const results = document.getElementById('results');
