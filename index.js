@@ -7,6 +7,10 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/demo', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/demo.html'));
+});
+
 
 // Health check route
 app.get('/', (req, res) => {
