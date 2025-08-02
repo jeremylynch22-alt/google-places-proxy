@@ -11,9 +11,21 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve /demo route
+const fs = require('fs');
 app.get('/demo', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/demo.html'));
+  const filePath = path.join(__dirname, 'public/demo.html');
+
+  fs.readFile(filePath, 'utf8', (err, html) => {
+    if (err) {
+      res.status(500).send('Failed to load demo.html');
+    } else {
+      const updated = html.replace(/GOOGLE_MAPS_API_KEY_HERE/g, process.env.GOOGLE_PHOTO_API_KEY);
+      res.send(updated);
+    }
+  });
 });
+
+
 
 app.get('/api/google-places-all', async (req, res) => {
   const { keyword = 'mexican food', page = 1, limit = 20 } = req.query;

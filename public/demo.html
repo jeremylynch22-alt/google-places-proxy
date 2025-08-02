@@ -135,6 +135,10 @@
     const perPage = 20;
     let totalPages = 1;
     let currentResults = [];
+    let map;
+	let mapInitialized = false;
+	let markers = [];
+
 
     function fetchPage() {
       document.getElementById('results').innerHTML = '';
@@ -197,13 +201,61 @@
       }
     }
 
-    function toggleView() {
-      const results = document.getElementById('results');
-      const mapDiv = document.getElementById('map');
-      const isMap = mapDiv.style.display === 'block';
-      results.style.display = isMap ? 'grid' : 'none';
-      mapDiv.style.display = isMap ? 'none' : 'block';
-    }
+	function toggleView() {
+	  const results = document.getElementById('results');
+	  const mapDiv = document.getElementById('map');
+	  const isMap = mapDiv.style.display === 'block';
+	
+	  if (isMap) {
+	    // Switch to list
+	    mapDiv.style.display = 'none';
+	    results.style.display = 'grid';
+	  } else {
+	    // Switch to map
+	    results.style.display = 'none';
+	    mapDiv.style.display = 'block';
+	
+	    if (!mapInitialized) {
+	      map = new google.maps.Map(document.getElementById('map'), {
+	        zoom: 10,
+	        center: { lat: 32.7157, lng: -117.1611 }, // Default to Downtown SD
+	      });
+	      mapInitialized = true;
+	    }
+	
+	    // Clear old markers
+	    markers.forEach(marker => marker.setMap(null));
+	    markers = [];
+	
+	    // Add new markers
+	    currentResults.forEach(place => {
+	      if (!place.geometry || !place.geometry.location) return;
+	
+	      const position = {
+	        lat: place.geometry.location.lat,
+	        lng: place.geometry.location.lng
+	      };
+	
+	      const marker = new google.maps.Marker({
+	        position,
+	        map,
+	        title: place.name,
+	      });
+	
+	      marker.addListener('click', () => openVideo(place.place_id));
+	
+	      markers.push(marker);
+	    });
+	
+	    if (currentResults[0]?.geometry?.location) {
+	      const center = {
+	        lat: currentResults[0].geometry.location.lat,
+	        lng: currentResults[0].geometry.location.lng
+	      };
+	      map.setCenter(center);
+	    }
+	  }
+	}
 
     function openVideo(placeId) {
       const dummyVideo = "https://www.youtube.com/embed/dQw4w9WgXcQ";
@@ -219,6 +271,9 @@
     window.onload = fetchPage;
   </script>
 
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_BROWSER_API_KEY&callback=renderResults"></script>
+<script async defer
+  src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_HERE">
+</script>
+
 </body>
 </html>
