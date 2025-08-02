@@ -3,14 +3,21 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-
+const path = require('path');
 const app = express();
 app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Health check or default root response
 app.get('/', (req, res) => {
   res.send('✅ Google Places Proxy is running');
 });
+
+app.get('/demo', (req, res) => {
+  res.sendFile(__dirname + '/public/demo.html');
+});
+
 
 app.get('/api/google-places', async (req, res) => {
   const { lat, lng, keyword } = req.query;

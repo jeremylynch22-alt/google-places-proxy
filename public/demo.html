@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>🌮 Mexican Food Near You</title>
+  <meta charset="UTF-8" />
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .place {
+      border-bottom: 1px solid #ccc;
+      padding: 10px 0;
+    }
+    .thumbnail {
+      width: 100px;
+      height: auto;
+      border-radius: 6px;
+      margin-right: 10px;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌮 Mexican Food Near San Diego</h1>
+  <div id="results">Loading...</div>
+
+  <script>
+    const BASE_URL = '/api/google-places';
+    const lat = 32.7157;
+    const lng = -117.1611;
+    const keyword = 'mexican food';
+
+    fetch(`${BASE_URL}?lat=${lat}&lng=${lng}&keyword=${encodeURIComponent(keyword)}`)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('results');
+        if (!data.results || data.results.length === 0) {
+          container.innerHTML = '<p>No results found.</p>';
+          return;
+        }
+
+        container.innerHTML = '';
+        data.results.forEach(place => {
+          const photoRef = place.photos?.[0]?.photo_reference;
+          const photoUrl = photoRef
+            ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoRef}&key=YOUR_GOOGLE_API_KEY`
+            : null;
+
+          container.innerHTML += `
+            <div class="place">
+              <div class="row">
+                ${photoUrl ? `<img src="${photoUrl}" class="thumbnail" />` : ''}
+                <div>
+                  <strong>${place.name}</strong><br/>
+                  ${place.vicinity}<br/>
+                  ⭐ ${place.rating || 'N/A'}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+      })
+      .catch(err => {
+        document.getElementById('results').innerHTML = '<p>Error loading places.</p>';
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
