@@ -7,6 +7,11 @@ const cors = require('cors');
 const app = express();
 app.use(cors());
 
+// Health check or default root response
+app.get('/', (req, res) => {
+  res.send('✅ Google Places Proxy is running');
+});
+
 app.get('/api/google-places', async (req, res) => {
   const { lat, lng, keyword } = req.query;
 
