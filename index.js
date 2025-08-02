@@ -16,14 +16,16 @@ app.get('/demo', (req, res) => {
 });
 
 app.get('/api/google-places-all', async (req, res) => {
-  const { keyword = 'mexican food' } = req.query;
+  const { keyword = 'mexican food', page = 1, limit = 20 } = req.query;
+  const pageNum = parseInt(page);
+  const limitNum = parseInt(limit);
 
   const centers = [
-    { lat: 32.7157, lng: -117.1611 }, // Downtown SD
-    { lat: 33.1192, lng: -117.0864 }, // Escondido
-    { lat: 32.5521, lng: -117.0452 }, // Chula Vista
-    { lat: 32.8336, lng: -116.7664 }, // Alpine
-    { lat: 32.7767, lng: -117.0713 }, // Normal Heights
+    { lat: 32.7157, lng: -117.1611 },
+    { lat: 33.1192, lng: -117.0864 },
+    { lat: 32.5521, lng: -117.0452 },
+    { lat: 32.8336, lng: -116.7664 },
+    { lat: 32.7767, lng: -117.0713 },
   ];
 
   const allResults = [];
@@ -65,7 +67,16 @@ app.get('/api/google-places-all', async (req, res) => {
     }, {})
   );
 
-  res.json({ results: unique });
+  const total = unique.length;
+  const start = (pageNum - 1) * limitNum;
+  const paginated = unique.slice(start, start + limitNum);
+
+  res.json({
+    results: paginated,
+    total,
+    page: pageNum,
+    totalPages: Math.ceil(total / limitNum),
+  });
 });
 
 app.listen(port, () => {
