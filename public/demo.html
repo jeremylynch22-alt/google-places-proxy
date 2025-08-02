@@ -82,6 +82,26 @@
       font-size: 1rem;
       margin: 0 0.5rem;
     }
+	.place {
+	  background: #fff;
+	  padding: 1rem;
+	  border-radius: 8px;
+	  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+	  cursor: pointer;
+	  transition: background 0.3s ease;
+	  position: relative;
+	  z-index: 1;
+	  overflow: hidden;
+	}
+	
+	.place:hover {
+	  background-image:
+	    linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.7)),
+	    url('https://upload.wikimedia.org/wikipedia/commons/f/fc/Flag_of_Mexico.svg');
+	  background-size: cover;
+	  background-position: center;
+	  background-repeat: no-repeat;
+	}
   </style>
 </head>
 <body>
@@ -141,11 +161,11 @@
         const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1); // placeholder
         return `
           <div class="place" onclick="openVideo('${place.place_id}')">
+            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
             <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
             <strong>${place.name}</strong><br/>
             ${place.vicinity || ''}<br/>
             Google: ⭐ ${place.rating || 'N/A'}
-            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
           </div>
         `;
       }).join('');
