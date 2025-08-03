@@ -14,11 +14,11 @@ const BROWSER_SAFE_API_KEY = process.env.GOOGLE_PHOTO_API_KEY;
 
 // City centers to search (now include name for filtering)
 const centers = [
-  { lat: 32.7157, lng: -117.1611, name: 'Downtown San Diego' },
-  { lat: 33.1192, lng: -117.0864, name: 'Escondido' },
-  { lat: 32.5521, lng: -117.0452, name: 'Chula Vista' },
-  { lat: 32.8336, lng: -116.7664, name: 'Alpine' },
-  { lat: 32.7767, lng: -117.0713, name: 'Normal Heights' },
+  { lat: 33.1959, lng: -117.3795, name: 'North' },       // Oceanside area
+  { lat: 32.6401, lng: -116.9196, name: 'East' },        // Jamul area
+  { lat: 32.7157, lng: -117.1611, name: 'Central' },     // Downtown San Diego
+  { lat: 32.6401, lng: -117.0842, name: 'South' },       // San Ysidro / Chula Vista
+  { lat: 32.7555, lng: -117.2414, name: 'West' },        // Ocean Beach / Point Loma
 ];
 
 // Serve dynamic demo.html with key injection
@@ -47,7 +47,7 @@ app.get('/api/google-places-all', async (req, res) => {
         {
           params: {
             location: `${center.lat},${center.lng}`,
-            radius: 10000, // 10km radius
+            radius: 15000, // 10km radius
             keyword: 'mexican food',
             type: 'restaurant',
             key: GOOGLE_API_KEY,
