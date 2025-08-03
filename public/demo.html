@@ -108,6 +108,7 @@
   </div>
 
   <div id="map"></div>
+  <div id="region-counts" style="margin-bottom: 1rem; font-weight: bold;"></div>
   <div id="results"></div>
   <div id="loading">🌯<span class="emoji-loader">🌯</span> Loading...</div>
   <div id="pagination">
@@ -150,6 +151,20 @@
         const ratingMatch = place.rating ? place.rating >= minRating : false;
         return nameMatch && cityMatch && ratingMatch;
       });
+      
+		// Group and count by cityCenter
+		const counts = {};
+		currentResults.forEach(place => {
+		  const center = place.cityCenter || 'Unknown';
+		  counts[center] = (counts[center] || 0) + 1;
+		});
+		
+		let countHtml = 'Restaurant Counts by Region: ';
+		for (const [region, count] of Object.entries(counts)) {
+		  countHtml += `${region}: ${count} | `;
+		}
+		
+		document.getElementById('region-counts').innerText = countHtml.slice(0, -2);
 
       renderFilteredResults(filtered);
     }
@@ -209,13 +224,13 @@
         results.style.display = 'none';
         mapDiv.style.display = 'block';
 
-        if (!mapInitialized) {
-          map = new google.maps.Map(document.getElementById('map'), {
-            zoom: 10,
-            center: { lat: 32.7157, lng: -117.1611 }
-          });
-          mapInitialized = true;
-        }
+		if (!mapInitialized) {
+		  map = new google.maps.Map(document.getElementById('map'), {
+		    zoom: 10,
+		    center: { lat: 32.8626, lng: -117.0022 } // Center of San Diego County
+		  });
+		  mapInitialized = true;
+		}
 
         renderMapMarkers(currentResults);
       }

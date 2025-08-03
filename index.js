@@ -12,14 +12,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const BROWSER_SAFE_API_KEY = process.env.GOOGLE_PHOTO_API_KEY;
 
-// City centers to search (now include name for filtering)
 const centers = [
-  { lat: 33.1959, lng: -117.3795, name: 'North' },       // Oceanside area
-  { lat: 32.6401, lng: -116.9196, name: 'East' },        // Jamul area
-  { lat: 32.7157, lng: -117.1611, name: 'Central' },     // Downtown San Diego
-  { lat: 32.6401, lng: -117.0842, name: 'South' },       // San Ysidro / Chula Vista
-  { lat: 32.7555, lng: -117.2414, name: 'West' },        // Ocean Beach / Point Loma
+  { lat: 33.2023, lng: -117.2425, name: 'North' },     // Vista / Oceanside / Carlsbad
+  { lat: 32.8265, lng: -116.8672, name: 'East' },      // El Cajon / Alpine
+  { lat: 32.7765, lng: -117.0713, name: 'Central' },   // Normal Heights / Mission Valley
+  { lat: 32.5772, lng: -117.0491, name: 'South' },     // Chula Vista / San Ysidro
+  { lat: 32.7503, lng: -117.2489, name: 'West' },      // Ocean Beach / Point Loma
 ];
+
 
 // Serve dynamic demo.html with key injection
 app.get('/demo', (req, res) => {
