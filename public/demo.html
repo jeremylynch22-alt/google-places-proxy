@@ -20,43 +20,44 @@
       gap: 1rem;
     }
 
-    .place {
-      background: #fff;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      cursor: pointer;
-      transition: background 0.3s ease;
-      position: relative;
-      z-index: 1;
-      overflow: hidden;
-      height: 360px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
+	.place {
+	  border: 1px solid #ddd;
+	  padding: 0.75rem;
+	  border-radius: 8px;
+	  margin-bottom: 1rem;
+	  background-color: white;
+	  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+	  cursor: pointer;
+	  transition: background-color 0.3s ease;
+	}
+	
+	.place:hover {
+	  background-size: cover;
+	  background-repeat: no-repeat;
+	  background-position: center;
+	  background-color: rgba(222,222,222,0.7);
+	}
+	
+	.place img {
+	  width: 100%;
+	  height: 160px;
+	  object-fit: cover;
+	  border-radius: 4px;
+	  margin-bottom: 0.5rem;
+	}
+	
+	.place-name {
+	  font-size: 1.15rem;
+	  font-weight: bold;
+	  margin-bottom: 0.3rem;
+	}
+	
+	.jerberto-rating {
+	  font-size: 0.95rem;
+	  font-style: italic;
+	  margin-bottom: 0.5rem;
+	}
 
-    .place:hover {
-      background-image:
-      linear-gradient(rgba(222, 222, 222, 0.3), rgba(222, 222, 222, 0.3));
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    }
-
-    .place img {
-      width: 100%;
-      height: 160px;
-      object-fit: cover;
-      border-radius: 4px;
-      margin-top: 0.5rem;
-    }
-
-    .jerberto-rating {
-      font-weight: bold;
-      color: green;
-      margin-bottom: 0.3rem;
-    }
 
     #map {
       height: 600px;
@@ -174,19 +175,19 @@
       const paginated = filteredList.slice(start, start + perPage);
       totalPages = Math.ceil(filteredList.length / perPage);
 
-      const html = paginated.map(place => {
-        const photoUrl = place.photoUrl;
-        const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1);
-        return `
-          <div class="place" onclick="openVideo('${place.place_id}')">
-            <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
-            <strong>${place.name}</strong><br/>
-            ${place.vicinity || ''}<br/>
-            Google: ⭐ ${place.rating || 'N/A'}
-            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
-          </div>
-        `;
-      }).join('');
+		const html = paginated.map(place => {
+		  const photoUrl = place.photoUrl;
+		  const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1);
+		  return `
+		    <div class="place" onclick="openVideo('${place.place_id}')">
+		      ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
+		      <div class="place-name">${place.name}</div>
+		      <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
+		      <div>${place.vicinity || ''}</div>
+		      <div>Google: ⭐ ${place.rating || 'N/A'}</div>
+		    </div>
+		  `;
+		}).join('');
 
       document.getElementById('results').innerHTML = html;
       document.getElementById('loading').style.display = 'none';
