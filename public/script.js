@@ -1,135 +1,98 @@
 // script.js
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-import { Loader } from "https://www.gstatic.com/maps-platform/js-api-loader/v1/js-api-loader.js";
+// Initialize Firebase
+const firebaseConfig = {
+  apiKey: window.FIREBASE_API_KEY,
+  authDomain: window.FIREBASE_AUTH_DOMAIN,
+  projectId: window.FIREBASE_PROJECT_ID,
+};
 
-const loader = new Loader({
-  apiKey: "YOUR_BROWSER_API_KEY",
-  version: "weekly"
-});
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-loader.load().then(() => {
-  console.log("Google Maps API loaded");
-  // initialize your map here if needed
-});
+// DOM elements
+const resultsContainer = document.getElementById("results");
+const paginationContainer = document.getElementById("pagination");
+const loadingSpinner = document.getElementById("loading");
 
-
-const API_BASE = "/api/google-places";
-
+// Example values — these should be set via the app controls
+let selectedCity = "All";
 let currentPage = 1;
-let selectedRegion = "";
-let minRating = 0;
-let searchName = "";
+const perPage = 20;
 
-async function fetchResults(page = 1) {
+async function fetchPlaces(city, page = 1) {
   showLoader();
-  const url = new URL(API_BASE, window.location.origin);
-  url.searchParams.append("page", page);
-  if (selectedRegion) url.searchParams.append("region", selectedRegion);
-  if (minRating) url.searchParams.append("minRating", minRating);
-  if (searchName) url.searchParams.append("name", searchName);
+  try {
+    const url = new URL("/api/google-places", window.location.origin);
+    url.searchParams.append("region", city);
+    url.searchParams.append("page", page);
 
-  const res = await fetch(url);
-  const data = await res.json();
+    const response = await fetch(url);
+    const data = await response.json();
 
-  renderResults(data.results);
-  renderPagination(data.totalPages, page);
-  hideLoader();
+    renderResults(data.places);
+    renderPagination(data.totalPages, page);
+  } catch (err) {
+    console.error("Failed to fetch places:", err);
+  } finally {
+    hideLoader();
+  }
 }
 
-function renderResults(results) {
-  const container = document.getElementById("results");
-  container.innerHTML = "";
-  results.forEach(place => {
+function renderResults(places) {
+  resultsContainer.innerHTML = "";
+  places.forEach(async place => {
     const card = document.createElement("div");
     card.className = "place";
-    card.onclick = () => openVideo(place.place_id);
 
-    const image = document.createElement("img");
-    image.src = place.photoUrl || "https://via.placeholder.com/300x160?text=No+Image";
-    card.appendChild(image);
+    // Get video review if available
+    let videoUrl = null;
+    const q = query(collection(db, "videos"), where("place_id", "==", place.place_id));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      videoUrl = snapshot.docs[0].data().video_url;
+    }
 
-    const name = document.createElement("div");
-    name.className = "place-name";
-    name.textContent = place.name;
-    card.appendChild(name);
+    card.innerHTML = `
+      <img src="${place.photoUrl}" alt="Photo of ${place.name}" />
+      <div class="place-name">${place.name}</div>
+      <div class="jerberto-rating">Jerberto's Rating: ${place.jerberto_rating || "N/A"}</div>
+      <div class="google-rating">Google Rating: ${place.rating || "N/A"}</div>
+    `;
 
-    const jerberto = document.createElement("div");
-    jerberto.className = "jerberto-rating";
-    jerberto.textContent = `Jerberto's Rating: ${place.jerberto_rating || "N/A"}`;
-    card.appendChild(jerberto);
+    card.addEventListener("click", () => {
+      if (videoUrl) {
+        window.open(videoUrl, "_blank");
+      } else {
+        alert("No video review available.");
+      }
+    });
 
-    const rating = document.createElement("div");
-    rating.className = "google-rating";
-    rating.textContent = `Google Rating: ${place.rating || "N/A"}`;
-    card.appendChild(rating);
-
-    container.appendChild(card);
+    resultsContainer.appendChild(card);
   });
 }
 
 function renderPagination(totalPages, currentPage) {
-  const pagination = document.getElementById("pagination");
-  pagination.innerHTML = "";
+  paginationContainer.innerHTML = "";
   for (let i = 1; i <= totalPages; i++) {
     const btn = document.createElement("button");
     btn.textContent = i;
-    btn.disabled = i === currentPage;
-    btn.onclick = () => {
-      currentPage = i;
-      fetchResults(i);
-    };
-    pagination.appendChild(btn);
+    if (i === currentPage) btn.disabled = true;
+    btn.addEventListener("click", () => {
+      fetchPlaces(selectedCity, i);
+    });
+    paginationContainer.appendChild(btn);
   }
 }
 
-function initControls() {
-  const controls = document.getElementById("controls");
-
-  const regionSelect = document.createElement("select");
-  regionSelect.innerHTML = `<option value="">All Regions</option>
-    <option value="North">North</option>
-    <option value="South">South</option>
-    <option value="East">East</option>
-    <option value="West">West</option>
-    <option value="Central">Central</option>`;
-  regionSelect.onchange = () => {
-    selectedRegion = regionSelect.value;
-    fetchResults(1);
-  };
-  controls.appendChild(regionSelect);
-
-  const ratingInput = document.createElement("input");
-  ratingInput.placeholder = "Minimum Rating";
-  ratingInput.type = "number";
-  ratingInput.min = 0;
-  ratingInput.max = 5;
-  ratingInput.onchange = () => {
-    minRating = ratingInput.value;
-    fetchResults(1);
-  };
-  controls.appendChild(ratingInput);
-
-  const nameInput = document.createElement("input");
-  nameInput.placeholder = "Search by name";
-  nameInput.oninput = () => {
-    searchName = nameInput.value;
-    fetchResults(1);
-  };
-  controls.appendChild(nameInput);
-
-  const toggleView = document.createElement("button");
-  toggleView.textContent = "Toggle Map View";
-  toggleView.onclick = () => {
-    const map = document.getElementById("map");
-    const list = document.getElementById("results");
-    map.style.display = map.style.display === "none" ? "block" : "none";
-    list.style.display = list.style.display === "none" ? "grid" : "none";
-  };
-  controls.appendChild(toggleView);
+function showLoader() {
+  loadingSpinner.classList.add("show");
+}
+function hideLoader() {
+  loadingSpinner.classList.remove("show");
 }
 
-// Initialize everything
-window.addEventListener("DOMContentLoaded", () => {
-  initControls();
-  fetchResults();
-});
+// Kick off initial fetch
+fetchPlaces(selectedCity, currentPage);

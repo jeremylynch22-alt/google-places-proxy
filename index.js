@@ -10,6 +10,7 @@ const app = express();
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
+
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const BROWSER_SAFE_API_KEY = process.env.GOOGLE_PHOTO_API_KEY;
 
@@ -107,6 +108,17 @@ app.get('/api/google-places-all', async (req, res) => {
     res.status(500).send('Error fetching data from Google Places API');
   }
 });
+
+app.get('/env.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.send(`
+    window.GOOGLE_MAPS_API_KEY = '${process.env.GOOGLE_MAPS_API_KEY}';
+    window.FIREBASE_API_KEY = '${process.env.FIREBASE_API_KEY}';
+    window.FIREBASE_AUTH_DOMAIN = '${process.env.FIREBASE_AUTH_DOMAIN}';
+    window.FIREBASE_PROJECT_ID = '${process.env.FIREBASE_PROJECT_ID}';
+  `);
+});
+
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
