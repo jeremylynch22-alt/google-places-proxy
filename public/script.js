@@ -2,7 +2,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Initialize Firebase
+// Initialize Firebase using env.js
 const firebaseConfig = {
   apiKey: window.FIREBASE_API_KEY,
   authDomain: window.FIREBASE_AUTH_DOMAIN,
@@ -17,7 +17,6 @@ const resultsContainer = document.getElementById("results");
 const paginationContainer = document.getElementById("pagination");
 const loadingSpinner = document.getElementById("loading");
 
-// Example values — these should be set via the app controls
 let selectedCity = "All";
 let currentPage = 1;
 const perPage = 20;
@@ -30,7 +29,10 @@ async function fetchPlaces(city, page = 1) {
     url.searchParams.append("page", page);
 
     const response = await fetch(url);
+    if (!response.ok) throw new Error("Network response was not ok");
+
     const data = await response.json();
+    if (!data.places) throw new Error("Invalid JSON response: 'places' missing");
 
     renderResults(data.places);
     renderPagination(data.totalPages, page);
@@ -49,10 +51,14 @@ function renderResults(places) {
 
     // Get video review if available
     let videoUrl = null;
-    const q = query(collection(db, "videos"), where("place_id", "==", place.place_id));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      videoUrl = snapshot.docs[0].data().video_url;
+    try {
+      const q = query(collection(db, "videos"), where("place_id", "==", place.place_id));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        videoUrl = snapshot.docs[0].data().video_url;
+      }
+    } catch (err) {
+      console.warn("Error fetching video URL for", place.name, err);
     }
 
     card.innerHTML = `
@@ -94,5 +100,7 @@ function hideLoader() {
   loadingSpinner.classList.remove("show");
 }
 
-// Kick off initial fetch
-fetchPlaces(selectedCity, currentPage);
+// Initial fetch
+window.addEventListener("DOMContentLoaded", () => {
+  fetchPlaces(selectedCity, currentPage);
+});
