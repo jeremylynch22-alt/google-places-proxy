@@ -13,15 +13,13 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const BROWSER_SAFE_API_KEY = process.env.GOOGLE_PHOTO_API_KEY;
 
 const centers = [
-  { lat: 33.2023, lng: -117.2425, name: 'North' },     // Vista / Oceanside / Carlsbad
-  { lat: 32.8265, lng: -116.8672, name: 'East' },      // El Cajon / Alpine
-  { lat: 32.7765, lng: -117.0713, name: 'Central' },   // Normal Heights / Mission Valley
-  { lat: 32.5772, lng: -117.0491, name: 'South' },     // Chula Vista / San Ysidro
-  { lat: 32.7503, lng: -117.2489, name: 'West' },      // Ocean Beach / Point Loma
+  { lat: 33.2023, lng: -117.2425, name: 'North' },
+  { lat: 32.8265, lng: -116.8672, name: 'East' },
+  { lat: 32.7765, lng: -117.0713, name: 'Central' },
+  { lat: 32.5772, lng: -117.0491, name: 'South' },
+  { lat: 32.7503, lng: -117.2489, name: 'West' },
 ];
 
-
-// Serve dynamic demo.html with key injection
 app.get('/demo', (req, res) => {
   const filePath = path.join(__dirname, 'public/demo.html');
   fs.readFile(filePath, 'utf8', (err, html) => {
@@ -34,11 +32,12 @@ app.get('/demo', (req, res) => {
   });
 });
 
-// API for frontend to use all aggregated places with pagination
 app.get('/api/google-places-all', async (req, res) => {
   const page = parseInt(req.query.page || '1');
   const limit = parseInt(req.query.limit || '50');
+  const countOnly = req.query.countOnly === 'true';
   const allResults = [];
+  const regionCounts = {};
 
   try {
     for (const center of centers) {
@@ -47,7 +46,7 @@ app.get('/api/google-places-all', async (req, res) => {
         {
           params: {
             location: `${center.lat},${center.lng}`,
-            radius: 15000, // 10km radius
+            radius: 10000,
             keyword: 'mexican food',
             type: 'restaurant',
             key: GOOGLE_API_KEY,
@@ -55,7 +54,7 @@ app.get('/api/google-places-all', async (req, res) => {
         }
       );
 
-      const enhanced = response.data.results.map(place => {
+      const results = response.data.results.map(place => {
         const photoUrl = place.photos?.[0]?.photo_reference
           ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${place.photos[0].photo_reference}&key=${BROWSER_SAFE_API_KEY}`
           : null;
@@ -67,7 +66,12 @@ app.get('/api/google-places-all', async (req, res) => {
         };
       });
 
-      allResults.push(...enhanced);
+      regionCounts[center.name] = results.length;
+      if (!countOnly) allResults.push(...results);
+    }
+
+    if (countOnly) {
+      return res.json({ regionCounts });
     }
 
     const total = allResults.length;
@@ -88,7 +92,6 @@ app.get('/api/google-places-all', async (req, res) => {
   }
 });
 
-// Start server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

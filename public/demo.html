@@ -1,279 +1,207 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <title>San Diego Mexican Food Explorer</title>
+  <title>San Diego Mexican Food Ratings</title>
   <style>
     body {
-      font-family: sans-serif;
-      padding: 1rem;
+      font-family: Arial, sans-serif;
+      margin: 1rem;
       background: #f4f4f4;
     }
-
     #controls {
       margin-bottom: 1rem;
     }
-
-    #results {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 1rem;
+    .place {
+      border: 1px solid #ddd;
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      background-color: white;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-
-	.place {
-	  border: 1px solid #ddd;
-	  padding: 0.75rem;
-	  border-radius: 8px;
-	  margin-bottom: 1rem;
-	  background-color: white;
-	  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-	  cursor: pointer;
-	  transition: background-color 0.3s ease;
-	}
-	
-	.place:hover {
-	  background-size: cover;
-	  background-repeat: no-repeat;
-	  background-position: center;
-	  background-color: rgba(222,222,222,0.7);
-	}
-	
-	.place img {
-	  width: 100%;
-	  height: 160px;
-	  object-fit: cover;
-	  border-radius: 4px;
-	  margin-bottom: 0.5rem;
-	}
-	
-	.place-name {
-	  font-size: 1.15rem;
-	  font-weight: bold;
-	  margin-bottom: 0.3rem;
-	}
-	
-	.jerberto-rating {
-	  font-size: 0.95rem;
-	  font-style: italic;
-	  margin-bottom: 0.5rem;
-	}
-
-
+    .place:hover {
+      background-image: url('/path/to/mexican-flag.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: rgba(255,255,255,0.7);
+    }
+    .place img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }
+    .place-name {
+      font-size: 1.15rem;
+      font-weight: bold;
+      margin-bottom: 0.3rem;
+    }
+    .jerberto-rating {
+      font-size: 0.95rem;
+      font-style: italic;
+      margin-bottom: 0.5rem;
+    }
     #map {
-      height: 600px;
+      height: 500px;
       width: 100%;
       display: none;
     }
-
-    #loading {
-      display: none;
-      font-size: 1.5rem;
-      text-align: center;
-    }
-
-    #pagination {
+    .pagination {
       margin-top: 1rem;
-      text-align: center;
-    }
-
-    .emoji-loader {
-      animation: spin 1s linear infinite;
-      font-size: 2rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <h1>Jerberto's 🌮 San Diego Mexican Food Finder</h1>
-
+  <h1>🌮 San Diego Mexican Food Ratings</h1>
   <div id="controls">
-    <input type="text" id="filter-name" placeholder="Search by name" oninput="applyFilters()" />
-    <select id="filter-rating" onchange="applyFilters()">
-      <option value="">All Ratings</option>
-      <option value="4">4+</option>
-      <option value="4.5">4.5+</option>
+    <select id="filter-city" onchange="applyFilters()">
+      <option value="">All Regions</option>
+      <option value="north">North</option>
+      <option value="east">East</option>
+      <option value="central">Central</option>
+      <option value="south">South</option>
+      <option value="west">West</option>
     </select>
-	<select id="filter-city" onchange="applyFilters()">
-	  <option value="">All Regions</option>
-	  <option value="north">North</option>
-	  <option value="east">East</option>
-	  <option value="central">Central</option>
-	  <option value="south">South</option>
-	  <option value="west">West</option>
-	</select>
+    <input type="text" id="filter-name" placeholder="Filter by name" oninput="applyFilters()">
+    <input type="number" id="filter-rating" placeholder="Min rating" step="0.1" oninput="applyFilters()">
     <button onclick="toggleView()">Toggle Map View</button>
   </div>
-
-  <div id="map"></div>
-  <div id="region-counts" style="margin-bottom: 1rem; font-weight: bold;"></div>
+  <div id="region-counts"></div>
   <div id="results"></div>
-  <div id="loading">🌯<span class="emoji-loader">🌯</span> Loading...</div>
-  <div id="pagination">
-    <button onclick="prevPage()">Prev</button>
+  <div class="pagination">
+    <button onclick="prevPage()">Previous</button>
     <span id="page-info"></span>
     <button onclick="nextPage()">Next</button>
   </div>
+  <div id="map"></div>
 
   <script>
+    let allResults = [];
     let currentResults = [];
     let currentPage = 1;
     let totalPages = 1;
-    const perPage = 20;
-    let map, mapInitialized = false, markers = [];
+    let isMapView = false;
+    let mapInitialized = false;
+    let map;
+    let markers = [];
 
-    function fetchPage() {
-      document.getElementById('results').innerHTML = '';
-      document.getElementById('loading').style.display = 'block';
+    async function loadData(page = 1) {
+      const res = await fetch(`/api/google-places-all?page=${page}&limit=50`);
+      const data = await res.json();
+      allResults = data.results;
+      currentPage = data.page;
+      totalPages = data.totalPages;
+      applyFilters();
+    }
 
-      fetch(`/api/google-places-all?page=${currentPage}&limit=100`)
-        .then(res => res.json())
-        .then(data => {
-          currentResults = data.results || [];
-          applyFilters();
-        })
-        .catch(err => {
-          document.getElementById('results').innerHTML = `<p>Error: ${err.message}</p>`;
-          document.getElementById('loading').style.display = 'none';
-        });
+    async function loadRegionCounts() {
+      const res = await fetch('/api/google-places-all?countOnly=true');
+      const data = await res.json();
+      let html = 'Restaurant Counts by Region: ';
+      for (const [region, count] of Object.entries(data.regionCounts)) {
+        html += `${region}: ${count} | `;
+      }
+      document.getElementById('region-counts').innerText = html.slice(0, -2);
     }
 
     function applyFilters() {
+      const name = document.getElementById('filter-name').value.toLowerCase();
+      const rating = parseFloat(document.getElementById('filter-rating').value) || 0;
       const city = document.getElementById('filter-city').value.toLowerCase();
-      const minRating = parseFloat(document.getElementById('filter-rating').value) || 0;
-      const nameFilter = document.getElementById('filter-name').value.toLowerCase();
 
-      const filtered = currentResults.filter(place => {
-        const nameMatch = nameFilter ? place.name?.toLowerCase().includes(nameFilter) : true;
-		const cityMatch = city ? place.cityCenter?.toLowerCase() === city : true;
-        const ratingMatch = place.rating ? place.rating >= minRating : false;
-        return nameMatch && cityMatch && ratingMatch;
+      currentResults = allResults.filter(place => {
+        const nameMatch = place.name?.toLowerCase().includes(name);
+        const ratingMatch = (place.rating || 0) >= rating;
+        const cityMatch = city ? place.cityCenter?.toLowerCase() === city : true;
+        return nameMatch && ratingMatch && cityMatch;
       });
-      
-		// Group and count by cityCenter
-		const counts = {};
-		currentResults.forEach(place => {
-		  const center = place.cityCenter || 'Unknown';
-		  counts[center] = (counts[center] || 0) + 1;
-		});
-		
-		let countHtml = 'Restaurant Counts by Region: ';
-		for (const [region, count] of Object.entries(counts)) {
-		  countHtml += `${region}: ${count} | `;
-		}
-		
-		document.getElementById('region-counts').innerText = countHtml.slice(0, -2);
 
-      renderFilteredResults(filtered);
+      renderFilteredResults();
     }
 
-    function renderFilteredResults(filteredList) {
-      const start = (currentPage - 1) * perPage;
-      const paginated = filteredList.slice(start, start + perPage);
-      totalPages = Math.ceil(filteredList.length / perPage);
-
-		const html = paginated.map(place => {
-		  const photoUrl = place.photoUrl;
-		  const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1);
-		  return `
-		    <div class="place" onclick="openVideo('${place.place_id}')">
-		      ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
-		      <div class="place-name">${place.name}</div>
-		      <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
-		      <div>${place.vicinity || ''}</div>
-		      <div>Google: ⭐ ${place.rating || 'N/A'}</div>
-		    </div>
-		  `;
-		}).join('');
+    function renderFilteredResults() {
+      const start = 0;
+      const limit = 20;
+      const paginated = currentResults.slice(start, start + limit);
+      const html = paginated.map(place => {
+        const photoUrl = place.photoUrl;
+        const jerbertoRating = "⭐ " + (Math.random() * 2 + 3).toFixed(1);
+        return `
+          <div class="place" onclick="openVideo('${place.place_id}')">
+            ${photoUrl ? `<img src="${photoUrl}" alt="Photo of ${place.name}" />` : ''}
+            <div class="place-name">${place.name}</div>
+            <div class="jerberto-rating">Jerberto's Rating: ${jerbertoRating}</div>
+            <div>${place.vicinity || ''}</div>
+            <div>Google: ⭐ ${place.rating || 'N/A'}</div>
+          </div>
+        `;
+      }).join('');
 
       document.getElementById('results').innerHTML = html;
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('page-info').textContent = `Page ${currentPage} of ${totalPages}`;
-      renderMapMarkers(filteredList);
+      document.getElementById('page-info').innerText = `Page ${currentPage} of ${totalPages}`;
+
+      if (isMapView) {
+        renderMap(paginated);
+      }
+    }
+
+    function toggleView() {
+      isMapView = !isMapView;
+      document.getElementById('map').style.display = isMapView ? 'block' : 'none';
+      document.getElementById('results').style.display = isMapView ? 'none' : 'block';
+
+      if (isMapView && !mapInitialized) {
+        map = new google.maps.Map(document.getElementById('map'), {
+          zoom: 10,
+          center: { lat: 32.8626, lng: -117.0022 }
+        });
+        mapInitialized = true;
+      }
+
+      if (isMapView) renderMap(currentResults.slice(0, 20));
+    }
+
+    function renderMap(places) {
+      markers.forEach(marker => marker.setMap(null));
+      markers = [];
+      places.forEach(place => {
+        if (!place.geometry) return;
+        const marker = new google.maps.Marker({
+          position: place.geometry.location,
+          map,
+          title: place.name
+        });
+        markers.push(marker);
+      });
+    }
+
+    function openVideo(placeId) {
+      // Placeholder: Replace with DB lookup or custom video logic
+      alert("Video review would play for: " + placeId);
     }
 
     function nextPage() {
       if (currentPage < totalPages) {
-        currentPage++;
-        applyFilters();
+        loadData(currentPage + 1);
       }
     }
 
     function prevPage() {
       if (currentPage > 1) {
-        currentPage--;
-        applyFilters();
+        loadData(currentPage - 1);
       }
     }
 
-    function openVideo(placeId) {
-      alert("Video for place ID: " + placeId + "\n[In future: embed video from DB]");
+    window.onload = () => {
+      loadRegionCounts();
+      loadData(1);
     }
-
-    function toggleView() {
-      const results = document.getElementById('results');
-      const mapDiv = document.getElementById('map');
-      const isMap = mapDiv.style.display === 'block';
-
-      if (isMap) {
-        mapDiv.style.display = 'none';
-        results.style.display = 'grid';
-      } else {
-        results.style.display = 'none';
-        mapDiv.style.display = 'block';
-
-		if (!mapInitialized) {
-		  map = new google.maps.Map(document.getElementById('map'), {
-		    zoom: 10,
-		    center: { lat: 32.8626, lng: -117.0022 } // Center of San Diego County
-		  });
-		  mapInitialized = true;
-		}
-
-        renderMapMarkers(currentResults);
-      }
-    }
-
-    function renderMapMarkers(places) {
-      if (!map) return;
-
-      markers.forEach(marker => marker.setMap(null));
-      markers = [];
-
-      places.forEach(place => {
-        if (!place.geometry || !place.geometry.location) return;
-
-        const position = {
-          lat: place.geometry.location.lat,
-          lng: place.geometry.location.lng
-        };
-
-        const marker = new google.maps.Marker({
-          position,
-          map,
-          title: place.name
-        });
-
-        marker.addListener('click', () => openVideo(place.place_id));
-        markers.push(marker);
-      });
-
-      if (places[0]?.geometry?.location) {
-        map.setCenter({
-          lat: places[0].geometry.location.lat,
-          lng: places[0].geometry.location.lng
-        });
-      }
-    }
-
-    fetchPage();
   </script>
-
-  <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_HERE">
-  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_HERE"></script>
 </body>
 </html>
