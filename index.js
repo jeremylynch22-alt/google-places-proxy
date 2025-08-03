@@ -89,6 +89,7 @@ app.get("/env.js", (req, res) => {
     window.FIREBASE_API_KEY = "${process.env.FIREBASE_API_KEY}";
     window.FIREBASE_AUTH_DOMAIN = "${process.env.FIREBASE_AUTH_DOMAIN}";
     window.FIREBASE_PROJECT_ID = "${process.env.FIREBASE_PROJECT_ID}";
+    window.GOOGLE_MAPS_API_KEY = "${process.env.GOOGLE_PHOTO_API_KEY}"; // or use GOOGLE_API_KEY if preferred
   `);
 });
 
