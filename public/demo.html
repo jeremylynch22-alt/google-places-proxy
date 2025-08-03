@@ -11,6 +11,17 @@
     }
     #controls {
       margin-bottom: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    #controls select,
+    #controls input,
+    #controls button {
+      padding: 0.4rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      border: 1px solid #ccc;
     }
     .card-container {
       display: grid;
@@ -42,12 +53,12 @@
       margin-bottom: 0.5rem;
     }
     .place-name {
-      font-size: 1.15rem;
+      font-size: 1.25rem;
       font-weight: bold;
       margin-bottom: 0.3rem;
     }
     .jerberto-rating {
-      font-size: 0.95rem;
+      font-size: 1rem;
       font-style: italic;
       margin-bottom: 0.5rem;
     }
@@ -63,24 +74,43 @@
     .pagination {
       margin-top: 1rem;
     }
+    #loading {
+      display: none;
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 1rem;
+    }
+    #loading span {
+      display: inline-block;
+      animation: spin 1.2s linear infinite;
+      font-size: 2rem;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
     /* Responsive adjustments */
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
       .card-container {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 768px) {
       body {
         margin: 0.5rem;
       }
+      #controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
       .card-container {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.5rem;
       }
       .place img {
-        height: 140px;
+        height: 130px;
       }
       .place-name {
         font-size: 1rem;
@@ -89,7 +119,22 @@
         font-size: 0.85rem;
       }
       .google-rating {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .card-container {
+        grid-template-columns: 1fr;
+      }
+      .place-name {
+        font-size: 0.95rem;
+      }
+      .jerberto-rating {
+        font-size: 0.8rem;
+      }
+      .google-rating {
+        font-size: 0.6rem;
       }
     }
   </style>
@@ -120,6 +165,8 @@
 </head>
 <body>
   <h1>Jerberto's 🌮 San Diego Mexican Food Finder</h1>
+  <div id="loading"><span>🌯</span> Loading results...</div>
+  <!-- navigation and filters container -->
   <div id="controls">
     <select id="filter-city" onchange="applyFilters()">
       <option value="">All Regions</option>
