@@ -1,5 +1,18 @@
 // script.js
 
+import { Loader } from "https://www.gstatic.com/maps-platform/js-api-loader/v1/js-api-loader.js";
+
+const loader = new Loader({
+  apiKey: "YOUR_BROWSER_API_KEY",
+  version: "weekly"
+});
+
+loader.load().then(() => {
+  console.log("Google Maps API loaded");
+  // initialize your map here if needed
+});
+
+
 const API_BASE = "/api/google-places";
 
 let currentPage = 1;
