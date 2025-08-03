@@ -15,7 +15,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "expo-location": "^18.1.6",
-    "express": "^5.1.0",
+    "express": "^4.21.2",
     "react-native-maps": "^1.24.15"
   }
 }
