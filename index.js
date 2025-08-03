@@ -1,3 +1,4 @@
+// index.js
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
@@ -20,6 +21,45 @@ const centers = [
   { lat: 32.7503, lng: -117.2489, name: 'West' },
 ];
 
+async function fetchAllPagesForCenter(center) {
+  let results = [];
+  let nextPageToken = null;
+
+  do {
+    const response = await axios.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
+      params: {
+        location: `${center.lat},${center.lng}`,
+        radius: 10000,
+        keyword: 'mexican food',
+        type: 'restaurant',
+        key: GOOGLE_API_KEY,
+        pagetoken: nextPageToken
+      }
+    });
+
+    const places = response.data.results.map(place => {
+      const photoUrl = place.photos?.[0]?.photo_reference
+        ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${place.photos[0].photo_reference}&key=${BROWSER_SAFE_API_KEY}`
+        : null;
+
+      return {
+        ...place,
+        photoUrl,
+        cityCenter: center.name,
+      };
+    });
+
+    results.push(...places);
+    nextPageToken = response.data.next_page_token;
+
+    if (nextPageToken) {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // wait for token activation
+    }
+  } while (nextPageToken);
+
+  return results;
+}
+
 app.get('/demo', (req, res) => {
   const filePath = path.join(__dirname, 'public/demo.html');
   fs.readFile(filePath, 'utf8', (err, html) => {
@@ -41,33 +81,9 @@ app.get('/api/google-places-all', async (req, res) => {
 
   try {
     for (const center of centers) {
-      const response = await axios.get(
-        'https://maps.googleapis.com/maps/api/place/nearbysearch/json',
-        {
-          params: {
-            location: `${center.lat},${center.lng}`,
-            radius: 10000,
-            keyword: 'mexican food',
-            type: 'restaurant',
-            key: GOOGLE_API_KEY,
-          },
-        }
-      );
-
-      const results = response.data.results.map(place => {
-        const photoUrl = place.photos?.[0]?.photo_reference
-          ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${place.photos[0].photo_reference}&key=${BROWSER_SAFE_API_KEY}`
-          : null;
-
-        return {
-          ...place,
-          photoUrl,
-          cityCenter: center.name,
-        };
-      });
-
-      regionCounts[center.name] = results.length;
-      if (!countOnly) allResults.push(...results);
+      const regionResults = await fetchAllPagesForCenter(center);
+      regionCounts[center.name] = regionResults.length;
+      if (!countOnly) allResults.push(...regionResults);
     }
 
     if (countOnly) {
