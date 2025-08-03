@@ -12,6 +12,12 @@
     #controls {
       margin-bottom: 1rem;
     }
+	.card-container {
+	  display: grid;
+	  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	  gap: 1rem;
+	  margin-top: 1rem;
+	} 
     .place {
       border: 1px solid #ddd;
       padding: 0.75rem;
@@ -21,13 +27,13 @@
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
       cursor: pointer;
       transition: background-color 0.3s ease;
+      max-width: 100%;
     }
     .place:hover {
-      background-image: url('/path/to/mexican-flag.png');
       background-size: cover;
       background-repeat: no-repeat;
       background-position: center;
-      background-color: rgba(255,255,255,0.7);
+      background-color: rgba(222,222,222,0.7);
     }
     .place img {
       width: 100%;
@@ -72,7 +78,7 @@
     <button onclick="toggleView()">Toggle Map View</button>
   </div>
   <div id="region-counts"></div>
-  <div id="results"></div>
+  <div id="results" class="card-container"></div>
   <div class="pagination">
     <button onclick="prevPage()">Previous</button>
     <span id="page-info"></span>
