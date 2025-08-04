@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Jerberto's 🌮 San Diego Mexican Food Ratings</title>
@@ -7,82 +7,48 @@
     body {
       font-family: Arial, sans-serif;
       margin: 1rem;
-      background: #f4f4f4;
+      background: #f9f9f9;
     }
-
     h1 {
       text-align: center;
-    }
-
-    #controls {
       margin-bottom: 1rem;
+    }
+    #controls {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
       justify-content: center;
+      margin-bottom: 1rem;
     }
-
-    #controls label {
+    label {
       font-weight: bold;
-      margin-right: 0.5rem;
     }
-
-    #controls select,
-    #controls button {
-      padding: 0.4rem;
+    select, button {
+      padding: 0.5rem;
       font-size: 1rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      flex: 1 1 auto;
-      max-width: 200px;
     }
-
-    #loading {
-      text-align: center;
-      font-size: 1.2rem;
-      margin: 1rem;
+    #map {
+      height: 500px;
+      width: 100%;
       display: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
     }
-
-    #loading.show {
-      display: block;
-      opacity: 1;
-    }
-
-    #loading span {
-      display: inline-block;
-      animation: spin 1.2s linear infinite;
-      font-size: 2rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
     .card-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1rem;
-      margin-top: 1rem;
     }
-
     .place {
+      background: #fff;
       border: 1px solid #ddd;
-      padding: 0.75rem;
       border-radius: 8px;
-      background-color: white;
+      padding: 0.75rem;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-      cursor: pointer;
       transition: background-color 0.3s ease;
+      cursor: pointer;
     }
-
     .place:hover {
       background-color: rgb(222, 222, 222);
     }
-
     .place img {
       width: 100%;
       height: 160px;
@@ -90,48 +56,63 @@
       border-radius: 4px;
       margin-bottom: 0.5rem;
     }
-
     .place-name {
       font-size: 1.25rem;
       font-weight: bold;
-      margin-bottom: 0.3rem;
     }
-
     .jerberto-rating {
       font-size: 1rem;
       font-style: italic;
-      margin-bottom: 0.25rem;
     }
-
     .google-rating {
       font-size: 0.8rem;
       color: #444;
-      margin-bottom: 0.25rem;
     }
-
     .address {
-      font-size: 0.75rem;
-      color: #333;
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
     }
-
     .pagination {
-      margin-top: 1rem;
       text-align: center;
+      margin: 1rem 0;
     }
-
     .pagination button {
-      margin: 0 0.25rem;
-      padding: 0.3rem 0.6rem;
+      margin: 0 4px;
+      padding: 0.4rem 0.75rem;
     }
-
-    #map {
-      height: 500px;
-      width: 100%;
+    #loading {
       display: none;
-      margin-top: 1rem;
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    #loading.show {
+      display: block;
+      opacity: 1;
+    }
+    #loading span {
+      display: inline-block;
+      animation: spin 1.2s linear infinite;
+      font-size: 2rem;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
-    @media (max-width: 400px) {
+    /* Responsive tweaks */
+    @media (max-width: 768px) {
+      .card-container {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      }
+      .place img {
+        height: 130px;
+      }
+    }
+
+    @media (max-width: 480px) {
       .card-container {
         grid-template-columns: 1fr;
       }
@@ -144,7 +125,7 @@
   <div id="loading"><span>🌯</span> Loading results...</div>
 
   <div id="controls">
-    <label for="cityFilter">Region:</label>
+    <label for="cityFilter">Choose a Region:</label>
     <select id="cityFilter">
       <option value="All">All</option>
       <option value="North">North</option>
@@ -161,7 +142,6 @@
   <div class="pagination" id="pagination"></div>
 
   <script src="/env.js"></script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_HERE"></script>
   <script type="module" src="script.js"></script>
 </body>
 </html>

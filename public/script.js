@@ -27,6 +27,22 @@ let isMapView = false;
 let map;
 let markers = [];
 
+function loadGoogleMapsApi() {
+  return new Promise((resolve, reject) => {
+    if (window.google && window.google.maps) {
+      resolve();
+    } else {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAPS_API_KEY}`;
+      script.async = true;
+      script.defer = true;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }
+  });
+}
+
 async function fetchPlaces(city, page = 1) {
   showLoader();
   try {
@@ -42,7 +58,10 @@ async function fetchPlaces(city, page = 1) {
 
     renderResults(data.places);
     renderPagination(data.totalPages, page);
-    if (isMapView) renderMap(data.places);
+    if (isMapView) {
+      await loadGoogleMapsApi();
+      renderMap(data.places);
+    }
   } catch (err) {
     console.error("Failed to fetch places:", err);
   } finally {
@@ -116,7 +135,7 @@ cityFilter.addEventListener("change", () => {
 });
 
 // Map toggle logic
-toggleMapBtn.addEventListener("click", () => {
+toggleMapBtn.addEventListener("click", async () => {
   isMapView = !isMapView;
   mapElement.style.display = isMapView ? "block" : "none";
   resultsContainer.style.display = isMapView ? "none" : "grid";

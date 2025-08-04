@@ -1,4 +1,3 @@
-// index.js
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
@@ -23,6 +22,7 @@ const PER_PAGE = 20;
 app.get("/api/google-places", async (req, res) => {
   const { region = "All", page = 1 } = req.query;
   const browserKey = process.env.GOOGLE_PHOTO_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
 
   const locations =
     region === "All" ? Object.values(centers) : [centers[region]];
@@ -38,22 +38,21 @@ app.get("/api/google-places", async (req, res) => {
             radius,
             keyword: "mexican food",
             type: "restaurant",
-            key: process.env.GOOGLE_API_KEY,
+            key: apiKey,
           },
         }
       );
       allResults.push(...response.data.results);
     }
 
-    // Deduplicate results by place_id
+    // Deduplicate
     const uniqueResults = Array.from(
-      new Map(allResults.map((place) => [place.place_id, place])).values()
+      new Map(allResults.map((p) => [p.place_id, p])).values()
     );
 
-    // Format data
     const formatted = uniqueResults.map((place) => {
       let photoUrl = "https://via.placeholder.com/400x300?text=No+Image";
-      if (place.photos && place.photos.length > 0) {
+      if (place.photos?.[0]?.photo_reference) {
         const ref = place.photos[0].photo_reference;
         photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${ref}&key=${browserKey}`;
       }
@@ -62,18 +61,16 @@ app.get("/api/google-places", async (req, res) => {
         place_id: place.place_id,
         name: place.name,
         rating: place.rating,
-        jerberto_rating: null, // Replace with DB lookup if available
+        jerberto_rating: null,
         photoUrl,
+        address: place.vicinity || "Address Not Available",
         geometry: place.geometry,
       };
     });
 
-    // Pagination
+    // Manual pagination
     const totalPages = Math.ceil(formatted.length / PER_PAGE);
-    const paginated = formatted.slice(
-      (page - 1) * PER_PAGE,
-      page * PER_PAGE
-    );
+    const paginated = formatted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
     res.json({ places: paginated, totalPages });
   } catch (err) {
@@ -82,18 +79,16 @@ app.get("/api/google-places", async (req, res) => {
   }
 });
 
-// Serve env.js with browser-safe env vars
 app.get("/env.js", (req, res) => {
   res.set("Content-Type", "application/javascript");
   res.send(`
     window.FIREBASE_API_KEY = "${process.env.FIREBASE_API_KEY}";
     window.FIREBASE_AUTH_DOMAIN = "${process.env.FIREBASE_AUTH_DOMAIN}";
     window.FIREBASE_PROJECT_ID = "${process.env.FIREBASE_PROJECT_ID}";
-    window.GOOGLE_MAPS_API_KEY = "${process.env.GOOGLE_PHOTO_API_KEY}"; // or use GOOGLE_API_KEY if preferred
+    window.GOOGLE_MAPS_API_KEY = "${process.env.GOOGLE_API_KEY}";
   `);
 });
 
-// Fallback to index.html for unmatched routes
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "demo.html"));
 });
