@@ -39,10 +39,10 @@ toggleMapBtn.addEventListener("click", () => {
 async function fetchAndRender() {
   loadingIndicator.classList.add("show");
   try {
-    const res = await fetch(`/api/google-places?region=${currentRegion}&page=${currentPage}`);
+    const res = await fetch(`/api/google-places?region=${currentRegion}`);
     const json = await res.json();
     currentData = json.places;
-    totalPages = json.totalPages;
+    totalPages = Math.ceil(currentData.length / 20);
     renderResults();
     renderPagination();
     if (mapElement.style.display === "block") renderMap();
@@ -54,7 +54,8 @@ async function fetchAndRender() {
 }
 
 function renderResults() {
-  resultsContainer.innerHTML = currentData
+  const pageData = currentData.slice((currentPage - 1) * 20, currentPage * 20);
+  resultsContainer.innerHTML = pageData
     .map(
       (place) => `
     <div class="place">
@@ -62,7 +63,7 @@ function renderResults() {
       <div class="place-name">${place.name}</div>
       <div class="jerberto-rating">Jerberto Rating: ${place.jerberto_rating || "N/A"}</div>
       <div class="google-rating">Google Rating: ${place.rating || "N/A"}</div>
-      <div class="place-address">${place.address}</div>
+      <div class="place-address">${place.address || "Address Not Available"}</div>
     </div>
   `
     )
@@ -77,7 +78,8 @@ function renderPagination() {
     btn.disabled = i === currentPage;
     btn.addEventListener("click", () => {
       currentPage = i;
-      fetchAndRender();
+      renderResults();
+      if (mapElement.style.display === "block") renderMap();
     });
     paginationContainer.appendChild(btn);
   }
@@ -87,14 +89,16 @@ function renderMap() {
   if (!map && currentData.length > 0) {
     map = new google.maps.Map(mapElement, {
       center: currentData[0].geometry.location,
-      zoom: 11,
+      zoom: 10,
     });
   }
 
   markers.forEach((m) => m.setMap(null));
   markers = [];
 
-  currentData.forEach((place) => {
+  const pageData = currentData.slice((currentPage - 1) * 20, currentPage * 20);
+
+  pageData.forEach((place) => {
     const marker = new google.maps.Marker({
       position: place.geometry.location,
       map,
@@ -102,7 +106,7 @@ function renderMap() {
     });
 
     const info = new google.maps.InfoWindow({
-      content: `<strong>${place.name}</strong><br>${place.address}`,
+      content: `<strong>${place.name}</strong><br>${place.address || "Address not available"}`,
     });
 
     marker.addListener("click", () => {
