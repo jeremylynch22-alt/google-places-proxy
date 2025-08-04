@@ -24,7 +24,7 @@ const centers = {
   NationalCity:    { lat: 32.6781, lng: -117.0992 },
   Oceanside:       { lat: 33.2, lng: -117.38 },
   Poway:           { lat: 32.96, lng: -117.04 },
-  Rancho Bernardo: { lat: 33.0336, lng: -117.0806 },
+  RanchoBernardo: { lat: 33.0336, lng: -117.0806 },
   SanDiego:        { lat: 32.72, lng: -117.16 },
   SanMarcos:       { lat: 33.14, lng: -117.17 },
   Santee:          { lat: 32.84, lng: -116.97 },
