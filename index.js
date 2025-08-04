@@ -1,3 +1,4 @@
+// index.js
 require("dotenv").config();
 const express = require("express");
 const axios = require("axios");
@@ -9,20 +10,19 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
 const centers = {
-  North: { lat: 33.1581, lng: -117.3506 },
-  East: { lat: 32.8300, lng: -116.9800 },
-  Central: { lat: 32.7157, lng: -117.1611 },
-  South: { lat: 32.5922, lng: -117.0306 },
-  West: { lat: 32.7500, lng: -117.2500 },
+  North:   { lat: 33.2900, lng: -117.1850 },
+  East:    { lat: 32.8500, lng: -116.8000 },
+  Central: { lat: 32.8300, lng: -117.1300 },
+  South:   { lat: 32.5700, lng: -117.0800 },
+  West:    { lat: 32.7500, lng: -117.2600 },
 };
 
-const radius = 20000; // 20km
+const radius = 35000; // Increased for broader coverage
 const PER_PAGE = 20;
 
 app.get("/api/google-places", async (req, res) => {
   const { region = "All", page = 1 } = req.query;
   const browserKey = process.env.GOOGLE_PHOTO_API_KEY;
-  const apiKey = process.env.GOOGLE_API_KEY;
 
   const locations =
     region === "All" ? Object.values(centers) : [centers[region]];
@@ -38,40 +38,43 @@ app.get("/api/google-places", async (req, res) => {
             radius,
             keyword: "mexican food",
             type: "restaurant",
-            key: apiKey,
+            key: process.env.GOOGLE_API_KEY,
           },
         }
       );
       allResults.push(...response.data.results);
     }
 
-    // Deduplicate
+    // Deduplicate results by place_id
     const uniqueResults = Array.from(
-      new Map(allResults.map((p) => [p.place_id, p])).values()
+      new Map(allResults.map((place) => [place.place_id, place])).values()
     );
 
+    // Format data
     const formatted = uniqueResults.map((place) => {
       let photoUrl = "https://via.placeholder.com/400x300?text=No+Image";
-      if (place.photos?.[0]?.photo_reference) {
+      if (place.photos && place.photos.length > 0) {
         const ref = place.photos[0].photo_reference;
         photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${ref}&key=${browserKey}`;
       }
 
-        return {
-          place_id: place.place_id,
-          name: place.name,
-          rating: place.rating,
-          jerberto_rating: null, // Future enhancement
-          photoUrl,
-          geometry: place.geometry,
-          address: place.vicinity || place.formatted_address || "Address not available",
-        };
-
+      return {
+        place_id: place.place_id,
+        name: place.name,
+        rating: place.rating,
+        jerberto_rating: null, // Replace with DB lookup if available
+        photoUrl,
+        geometry: place.geometry,
+        address: place.vicinity || "Address not available"
+      };
     });
 
-    // Manual pagination
+    // Pagination
     const totalPages = Math.ceil(formatted.length / PER_PAGE);
-    const paginated = formatted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    const paginated = formatted.slice(
+      (page - 1) * PER_PAGE,
+      page * PER_PAGE
+    );
 
     res.json({ places: paginated, totalPages });
   } catch (err) {
@@ -80,6 +83,7 @@ app.get("/api/google-places", async (req, res) => {
   }
 });
 
+// Serve env.js with browser-safe env vars
 app.get("/env.js", (req, res) => {
   res.set("Content-Type", "application/javascript");
   res.send(`
@@ -90,6 +94,7 @@ app.get("/env.js", (req, res) => {
   `);
 });
 
+// Fallback to index.html for unmatched routes
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "demo.html"));
 });
