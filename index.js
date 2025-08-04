@@ -57,15 +57,16 @@ app.get("/api/google-places", async (req, res) => {
         photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${ref}&key=${browserKey}`;
       }
 
-      return {
-        place_id: place.place_id,
-        name: place.name,
-        rating: place.rating,
-        jerberto_rating: null,
-        photoUrl,
-        address: place.vicinity || "Address Not Available",
-        geometry: place.geometry,
-      };
+        return {
+          place_id: place.place_id,
+          name: place.name,
+          rating: place.rating,
+          jerberto_rating: null, // Future enhancement
+          photoUrl,
+          geometry: place.geometry,
+          address: place.vicinity || place.formatted_address || "Address not available",
+        };
+
     });
 
     // Manual pagination

@@ -3,34 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <title>Jerberto's 🌮 San Diego Mexican Food Ratings</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 1rem;
-      background: #f9f9f9;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 1rem;
+      background: #f4f4f4;
     }
     #controls {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      justify-content: center;
       margin-bottom: 1rem;
+      justify-content: center;
     }
-    label {
+    #controls label {
       font-weight: bold;
     }
-    select, button {
+    #controls select,
+    #controls button {
       padding: 0.5rem;
       font-size: 1rem;
-    }
-    #map {
-      height: 500px;
-      width: 100%;
-      display: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
     .card-container {
       display: grid;
@@ -38,13 +33,11 @@
       gap: 1rem;
     }
     .place {
-      background: #fff;
-      border: 1px solid #ddd;
+      background: white;
       border-radius: 8px;
       padding: 0.75rem;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       transition: background-color 0.3s ease;
-      cursor: pointer;
     }
     .place:hover {
       background-color: rgb(222, 222, 222);
@@ -61,58 +54,49 @@
       font-weight: bold;
     }
     .jerberto-rating {
-      font-size: 1rem;
       font-style: italic;
+      margin: 0.25rem 0;
     }
     .google-rating {
-      font-size: 0.8rem;
-      color: #444;
+      font-size: 0.85rem;
+      color: #555;
     }
     .address {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
+      color: #333;
       margin-top: 0.25rem;
     }
     .pagination {
-      text-align: center;
-      margin: 1rem 0;
-    }
-    .pagination button {
-      margin: 0 4px;
-      padding: 0.4rem 0.75rem;
+      margin: 1rem auto;
+      display: flex;
+      gap: 0.25rem;
+      justify-content: center;
     }
     #loading {
       display: none;
       text-align: center;
-      font-size: 1.2rem;
-      margin: 1rem;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      font-size: 1.1rem;
     }
     #loading.show {
       display: block;
-      opacity: 1;
     }
     #loading span {
-      display: inline-block;
       animation: spin 1.2s linear infinite;
+      display: inline-block;
       font-size: 2rem;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-
-    /* Responsive tweaks */
-    @media (max-width: 768px) {
-      .card-container {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      }
-      .place img {
-        height: 130px;
-      }
+    #map {
+      display: none;
+      width: 100%;
+      height: 500px;
+      margin-top: 1rem;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 768px) {
       .card-container {
         grid-template-columns: 1fr;
       }
@@ -125,7 +109,7 @@
   <div id="loading"><span>🌯</span> Loading results...</div>
 
   <div id="controls">
-    <label for="cityFilter">Choose a Region:</label>
+    <label for="cityFilter">Filter by Region:</label>
     <select id="cityFilter">
       <option value="All">All</option>
       <option value="North">North</option>
