@@ -10,14 +10,27 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
 const centers = {
-  North:   { lat: 33.2900, lng: -117.1850 },
-  East:    { lat: 32.8500, lng: -116.8000 },
-  Central: { lat: 32.8300, lng: -117.1300 },
-  South:   { lat: 32.5700, lng: -117.0800 },
-  West:    { lat: 32.7500, lng: -117.2600 },
+  Carlsbad:        { lat: 33.16, lng: -117.34 },
+  ChulaVista:      { lat: 32.64, lng: -117.08 },
+  Coronado:        { lat: 32.69, lng: -117.18 },
+  DelMar:          { lat: 32.96, lng: -117.27 },
+  ElCajon:         { lat: 32.77886, lng: -116.87142 },
+  Encinitas:       { lat: 33.04, lng: -117.29 },
+  Escondido:       { lat: 33.1192068, lng: -117.086421 },
+  ImperialBeach:   { lat: 32.58, lng: -117.11 },
+  LaMesa:          { lat: 32.75964, lng: -116.99253 },
+  LemonGrove:      { lat: 32.733451, lng: -117.033702 },
+  NationalCity:    { lat: 32.6781, lng: -117.0992 },
+  Oceanside:       { lat: 33.2, lng: -117.38 },
+  Poway:           { lat: 32.96, lng: -117.04 },
+  SanDiego:        { lat: 32.72, lng: -117.16 },
+  SanMarcos:       { lat: 33.14, lng: -117.17 },
+  Santee:          { lat: 32.84, lng: -116.97 },
+  SolanaBeach:     { lat: 32.991155, lng: -117.2711481 },
+  Vista:           { lat: 33.2143717, lng: -117.2088167 }
 };
 
-const radius = 35000; // Increased for broader coverage
+const radius = 35000; // 35km for better coverage
 const PER_PAGE = 20;
 
 app.get("/api/google-places", async (req, res) => {
@@ -62,7 +75,7 @@ app.get("/api/google-places", async (req, res) => {
         place_id: place.place_id,
         name: place.name,
         rating: place.rating,
-        jerberto_rating: null, // Replace with DB lookup if available
+        jerberto_rating: null, // Placeholder for DB lookup
         photoUrl,
         geometry: place.geometry,
         address: place.vicinity || "Address not available"
@@ -83,7 +96,7 @@ app.get("/api/google-places", async (req, res) => {
   }
 });
 
-// Serve env.js with browser-safe env vars
+// Serve frontend-safe Firebase & Google Maps keys
 app.get("/env.js", (req, res) => {
   res.set("Content-Type", "application/javascript");
   res.send(`
@@ -94,7 +107,7 @@ app.get("/env.js", (req, res) => {
   `);
 });
 
-// Fallback to index.html for unmatched routes
+// Fallback route for SPA
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "demo.html"));
 });
