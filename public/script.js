@@ -16,10 +16,15 @@ const db = getFirestore(app);
 const resultsContainer = document.getElementById("results");
 const paginationContainer = document.getElementById("pagination");
 const loadingSpinner = document.getElementById("loading");
+const toggleMapBtn = document.getElementById("toggleMapBtn");
+const mapElement = document.getElementById("map");
 
 let selectedCity = "All";
 let currentPage = 1;
 const perPage = 20;
+let isMapView = false;
+let map;
+let markers = [];
 
 async function fetchPlaces(city, page = 1) {
   showLoader();
@@ -36,6 +41,7 @@ async function fetchPlaces(city, page = 1) {
 
     renderResults(data.places);
     renderPagination(data.totalPages, page);
+    if (isMapView) renderMap(data.places);
   } catch (err) {
     console.error("Failed to fetch places:", err);
   } finally {
@@ -98,6 +104,73 @@ function showLoader() {
 }
 function hideLoader() {
   loadingSpinner.classList.remove("show");
+}
+
+// Map toggle logic
+toggleMapBtn.addEventListener("click", () => {
+  isMapView = !isMapView;
+  mapElement.style.display = isMapView ? "block" : "none";
+  resultsContainer.style.display = isMapView ? "none" : "grid";
+  paginationContainer.style.display = isMapView ? "none" : "block";
+  if (isMapView && map && markers.length > 0) {
+    google.maps.event.trigger(map, "resize");
+    map.setCenter(markers[0].getPosition());
+  }
+});
+
+function renderMap(places) {
+  if (!map) {
+    map = new google.maps.Map(mapElement, {
+      zoom: 10,
+      center: { lat: 32.7157, lng: -117.1611 },
+    });
+  }
+
+  // Clear markers
+  markers.forEach(marker => marker.setMap(null));
+  markers = [];
+
+  places.forEach(async place => {
+    const position = {
+      lat: place.geometry.location.lat,
+      lng: place.geometry.location.lng,
+    };
+
+    const marker = new google.maps.Marker({
+      position,
+      map,
+      title: place.name,
+    });
+
+    // Get video URL
+    let videoUrl = null;
+    try {
+      const q = query(collection(db, "videos"), where("place_id", "==", place.place_id));
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        videoUrl = snapshot.docs[0].data().video_url;
+      }
+    } catch (err) {
+      console.warn("Error fetching video URL for", place.name, err);
+    }
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `
+        <div>
+          <strong>${place.name}</strong><br/>
+          Jerberto’s Rating: ${place.jerberto_rating || "N/A"}<br/>
+          Google Rating: ${place.rating || "N/A"}<br/>
+          ${videoUrl ? `<a href="${videoUrl}" target="_blank">🎥 Watch Review</a>` : ""}
+        </div>
+      `,
+    });
+
+    marker.addListener("click", () => {
+      infoWindow.open(map, marker);
+    });
+
+    markers.push(marker);
+  });
 }
 
 // Initial fetch
