@@ -22,21 +22,51 @@
       justify-content: center;
     }
 
+    #controls label {
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+
     #controls select,
-    #controls input,
     #controls button {
       padding: 0.4rem;
       font-size: 1rem;
       border-radius: 4px;
       border: 1px solid #ccc;
-      max-width: 220px;
       flex: 1 1 auto;
+      max-width: 200px;
+    }
+
+    #loading {
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 1rem;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #loading.show {
+      display: block;
+      opacity: 1;
+    }
+
+    #loading span {
+      display: inline-block;
+      animation: spin 1.2s linear infinite;
+      font-size: 2rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .card-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1rem;
+      margin-top: 1rem;
     }
 
     .place {
@@ -70,12 +100,18 @@
     .jerberto-rating {
       font-size: 1rem;
       font-style: italic;
-      margin-bottom: 0.4rem;
+      margin-bottom: 0.25rem;
     }
 
     .google-rating {
       font-size: 0.8rem;
       color: #444;
+      margin-bottom: 0.25rem;
+    }
+
+    .address {
+      font-size: 0.75rem;
+      color: #333;
     }
 
     .pagination {
@@ -84,81 +120,20 @@
     }
 
     .pagination button {
-      margin: 0 3px;
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
-      border: none;
-      background-color: #ddd;
-      cursor: pointer;
+      margin: 0 0.25rem;
+      padding: 0.3rem 0.6rem;
     }
 
-    .pagination button:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
-    }
-
-    #loading {
+    #map {
+      height: 500px;
+      width: 100%;
       display: none;
-      text-align: center;
-      font-size: 1.2rem;
-      margin: 1rem;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      margin-top: 1rem;
     }
 
-    #loading.show {
-      display: block;
-      opacity: 1;
-    }
-
-    #loading span {
-      display: inline-block;
-      animation: spin 1.2s linear infinite;
-      font-size: 2rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 768px) {
-      .card-container {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      }
-
-      .place img {
-        height: 130px;
-      }
-
-      .place-name {
-        font-size: 1rem;
-      }
-
-      .jerberto-rating {
-        font-size: 0.9rem;
-      }
-
-      .google-rating {
-        font-size: 0.7rem;
-      }
-    }
-
-    @media (max-width: 480px) {
+    @media (max-width: 400px) {
       .card-container {
         grid-template-columns: 1fr;
-      }
-
-      .place-name {
-        font-size: 1rem;
-      }
-
-      .jerberto-rating {
-        font-size: 0.85rem;
-      }
-
-      .google-rating {
-        font-size: 0.65rem;
       }
     }
   </style>
@@ -169,6 +144,7 @@
   <div id="loading"><span>🌯</span> Loading results...</div>
 
   <div id="controls">
+    <label for="cityFilter">Region:</label>
     <select id="cityFilter">
       <option value="All">All</option>
       <option value="North">North</option>
@@ -180,15 +156,12 @@
     <button id="toggleMapBtn">🗺️ Toggle Map View</button>
   </div>
 
-  <div id="map" style="height: 500px; display: none;"></div>
-
+  <div id="map"></div>
   <div class="card-container" id="results"></div>
   <div class="pagination" id="pagination"></div>
 
-  <!-- Load Firebase env -->
   <script src="/env.js"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY_HERE"></script>
   <script type="module" src="script.js"></script>
-  <script async defer id="googleMapsScript"></script>
 </body>
-
 </html>

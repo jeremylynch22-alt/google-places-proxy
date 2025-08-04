@@ -18,6 +18,7 @@ const paginationContainer = document.getElementById("pagination");
 const loadingSpinner = document.getElementById("loading");
 const toggleMapBtn = document.getElementById("toggleMapBtn");
 const mapElement = document.getElementById("map");
+const cityFilter = document.getElementById("cityFilter");
 
 let selectedCity = "All";
 let currentPage = 1;
@@ -72,6 +73,7 @@ function renderResults(places) {
       <div class="place-name">${place.name}</div>
       <div class="jerberto-rating">Jerberto's Rating: ${place.jerberto_rating || "N/A"}</div>
       <div class="google-rating">Google Rating: ${place.rating || "N/A"}</div>
+      <div class="address">${place.address || "Address not available"}</div>
     `;
 
     card.addEventListener("click", () => {
@@ -105,6 +107,13 @@ function showLoader() {
 function hideLoader() {
   loadingSpinner.classList.remove("show");
 }
+
+// Region filter logic
+cityFilter.addEventListener("change", () => {
+  selectedCity = cityFilter.value;
+  currentPage = 1;
+  fetchPlaces(selectedCity, currentPage);
+});
 
 // Map toggle logic
 toggleMapBtn.addEventListener("click", () => {
