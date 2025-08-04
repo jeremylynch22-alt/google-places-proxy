@@ -10,38 +10,49 @@
       margin: 1rem;
       background: #f4f4f4;
     }
+
     #controls {
+      margin-bottom: 1rem;
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
-      margin-bottom: 1rem;
       justify-content: center;
     }
-    #controls label {
+
+    label {
       font-weight: bold;
+      margin-right: 0.5rem;
     }
-    #controls select,
-    #controls button {
-      padding: 0.5rem;
+
+    select,
+    button {
+      padding: 0.4rem;
       font-size: 1rem;
-      border: 1px solid #ccc;
       border-radius: 4px;
+      border: 1px solid #ccc;
     }
+
     .card-container {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 1rem;
+      margin-top: 1rem;
     }
+
     .place {
-      background: white;
-      border-radius: 8px;
+      border: 1px solid #ddd;
       padding: 0.75rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      background-color: white;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      cursor: pointer;
       transition: background-color 0.3s ease;
     }
+
     .place:hover {
       background-color: rgb(222, 222, 222);
     }
+
     .place img {
       width: 100%;
       height: 160px;
@@ -49,46 +60,33 @@
       border-radius: 4px;
       margin-bottom: 0.5rem;
     }
+
     .place-name {
       font-size: 1.25rem;
       font-weight: bold;
+      margin-bottom: 0.3rem;
     }
+
     .jerberto-rating {
       font-style: italic;
-      margin: 0.25rem 0;
+      margin-bottom: 0.3rem;
     }
-    .google-rating {
-      font-size: 0.85rem;
+
+    .google-rating,
+    .place-address {
+      font-size: 0.9rem;
       color: #555;
     }
-    .address {
-      font-size: 0.85rem;
-      color: #333;
-      margin-top: 0.25rem;
-    }
+
     .pagination {
-      margin: 1rem auto;
-      display: flex;
-      gap: 0.25rem;
-      justify-content: center;
-    }
-    #loading {
-      display: none;
+      margin-top: 1rem;
       text-align: center;
-      font-size: 1.1rem;
     }
-    #loading.show {
-      display: block;
+
+    .pagination button {
+      margin: 0 5px;
     }
-    #loading span {
-      animation: spin 1.2s linear infinite;
-      display: inline-block;
-      font-size: 2rem;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+
     #map {
       display: none;
       width: 100%;
@@ -96,7 +94,21 @@
       margin-top: 1rem;
     }
 
-    @media (max-width: 768px) {
+    #loading {
+      display: none;
+      text-align: center;
+      font-size: 1.2rem;
+      margin: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #loading.show {
+      display: block;
+      opacity: 1;
+    }
+
+    @media (max-width: 400px) {
       .card-container {
         grid-template-columns: 1fr;
       }
@@ -109,29 +121,15 @@
   <div id="loading"><span>🌯</span> Loading results...</div>
 
   <div id="controls">
-    <label for="cityFilter">Select a City:</label>
+    <label for="cityFilter">Region:</label>
     <select id="cityFilter">
       <option value="All">All</option>
-      <option value="Carlsbad">Carlsbad</option>
-      <option value="ChulaVista">Chula Vista</option>
-      <option value="Coronado">Coronado</option>
-      <option value="DelMar">Del Mar</option>
-      <option value="ElCajon">El Cajon</option>
-      <option value="Encinitas">Encinitas</option>
-      <option value="Escondido">Escondido</option>
-      <option value="Fallbrook">Fallbrook</option>      
-      <option value="ImperialBeach">Imperial Beach</option>
-      <option value="LaMesa">La Mesa</option>
-      <option value="LemonGrove">Lemon Grove</option>
-      <option value="NationalCity">National City</option>
-      <option value="Oceanside">Oceanside</option>
-      <option value="Poway">Poway</option>
-      <option value="RanchoBernardo">Rancho Bernardo</option>
-      <option value="SanDiego">San Diego</option>
-      <option value="SanMarcos">San Marcos</option>
-      <option value="Santee">Santee</option>
-      <option value="SolanaBeach">Solana Beach</option>
-      <option value="Vista">Vista</option>
+      <option value="NorthCoastal">North Coastal</option>
+      <option value="NorthInland">North Inland</option>
+      <option value="NorthCentral">North Central</option>
+      <option value="East">East</option>
+      <option value="Central">Central</option>
+      <option value="South">South</option>
     </select>
     <button id="toggleMapBtn">🗺️ Toggle Map View</button>
   </div>
@@ -140,7 +138,21 @@
   <div class="card-container" id="results"></div>
   <div class="pagination" id="pagination"></div>
 
+  <!-- Load env vars -->
   <script src="/env.js"></script>
+
+  <!-- Load Maps API dynamically -->
+  <script>
+    window.addEventListener("load", () => {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAPS_API_KEY}`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    });
+  </script>
+
+  <!-- Load main app -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
