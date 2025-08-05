@@ -1,141 +1,81 @@
 // script.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-const app = initializeApp({
-  apiKey: window.FIREBASE_API_KEY,
-  authDomain: window.FIREBASE_AUTH_DOMAIN,
-  projectId: window.FIREBASE_PROJECT_ID,
-});
-const db = getFirestore(app);
-
-const resultsContainer = document.getElementById("results");
-const paginationContainer = document.getElementById("pagination");
-const loadingIndicator = document.getElementById("loading");
+const regionSelect = document.getElementById("region");
+const ratingFilter = document.getElementById("ratingFilter");
+const nameFilter = document.getElementById("nameFilter");
 const cityFilter = document.getElementById("cityFilter");
-const toggleMapBtn = document.getElementById("toggleMapBtn");
-const mapElement = document.getElementById("map");
+const placesContainer = document.getElementById("places");
+const loading = document.getElementById("loading");
 
-let currentPage = 1;
-let currentRegion = "All";
-let currentData = [];
-let totalPages = 1;
-let map;
-let markers = [];
+regionSelect.addEventListener("change", fetchAndRender);
+ratingFilter.addEventListener("input", renderPlaces);
+nameFilter.addEventListener("input", renderPlaces);
+cityFilter.addEventListener("input", renderPlaces);
 
-cityFilter.addEventListener("change", () => {
-  currentRegion = cityFilter.value;
-  currentPage = 1;
-  fetchAndRender();
-});
+let allPlaces = [];
 
-toggleMapBtn.addEventListener("click", () => {
-  mapElement.style.display = mapElement.style.display === "none" ? "block" : "none";
-  if (mapElement.style.display === "block") {
-    setTimeout(renderMap, 200);
-  }
-});
+async function fetchAndRender() {
+  const region = regionSelect.value;
 
-async function fetchAndRender(region) {
-  const loading = document.getElementById("loading");
-  const container = document.getElementById("results");
+  // Show loading animation
+  loading.classList.add("show");
+  placesContainer.innerHTML = "";
 
   try {
-    loading.classList.remove("hidden"); // show loading spinner
-    container.innerHTML = ""; // clear existing cards
-
     const response = await fetch(`/api/google-places?region=${region}`);
     const data = await response.json();
-    const places = data.places;
 
-    if (!places || !places.length) {
-      container.innerHTML = "<p>No results found.</p>";
-      return;
+    if (!data.places || data.places.length === 0) {
+      throw new Error("No places returned from API.");
     }
 
-    places.forEach(place => {
-      const card = document.createElement("div");
-      card.className = "restaurant-card";
-      card.innerHTML = `
-        <h3>${place.name}</h3>
-        <p>${place.vicinity || place.formatted_address || "No address"}</p>
-        <p>Google Rating: ${place.rating || "N/A"}</p>
-      `;
-      container.appendChild(card);
-    });
-
-  } catch (err) {
-    console.error("Failed to fetch places:", err);
-    container.innerHTML = "<p>There was an error loading data.</p>";
+    allPlaces = data.places;
+    renderPlaces();
+  } catch (error) {
+    console.error("Failed to fetch places:", error);
+    placesContainer.innerHTML = `<p class="error">Failed to load results: ${error.message}</p>`;
   } finally {
-    loading.classList.add("hidden"); // always hide loading spinner
+    // Hide loading animation
+    loading.classList.remove("show");
   }
 }
 
+function renderPlaces() {
+  const minRating = parseFloat(ratingFilter.value) || 0;
+  const nameQuery = nameFilter.value.toLowerCase();
+  const cityQuery = cityFilter.value.toLowerCase();
 
+  const filtered = allPlaces.filter((place) => {
+    const name = place.name?.toLowerCase() || "";
+    const city = place.vicinity?.toLowerCase() || "";
+    const rating = parseFloat(place.rating || 0);
 
-function renderResults() {
-  const pageData = currentData.slice((currentPage - 1) * 20, currentPage * 20);
-  resultsContainer.innerHTML = pageData
-    .map(
-      (place) => `
-    <div class="place">
-      <img src="${place.photoUrl}" alt="${place.name}" />
-      <div class="place-name">${place.name}</div>
-      <div class="jerberto-rating">Jerberto Rating: ${place.jerberto_rating || "N/A"}</div>
-      <div class="google-rating">Google Rating: ${place.rating || "N/A"}</div>
-      <div class="place-address">${place.address || "Address Not Available"}</div>
-    </div>
-  `
-    )
-    .join("");
-}
-
-function renderPagination() {
-  paginationContainer.innerHTML = "";
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement("button");
-    btn.textContent = i;
-    btn.disabled = i === currentPage;
-    btn.addEventListener("click", () => {
-      currentPage = i;
-      renderResults();
-      if (mapElement.style.display === "block") renderMap();
-    });
-    paginationContainer.appendChild(btn);
-  }
-}
-
-function renderMap() {
-  if (!map && currentData.length > 0) {
-    map = new google.maps.Map(mapElement, {
-      center: currentData[0].geometry.location,
-      zoom: 10,
-    });
-  }
-
-  markers.forEach((m) => m.setMap(null));
-  markers = [];
-
-  const pageData = currentData.slice((currentPage - 1) * 20, currentPage * 20);
-
-  pageData.forEach((place) => {
-    const marker = new google.maps.Marker({
-      position: place.geometry.location,
-      map,
-      title: place.name,
-    });
-
-    const info = new google.maps.InfoWindow({
-      content: `<strong>${place.name}</strong><br>${place.address || "Address not available"}`,
-    });
-
-    marker.addListener("click", () => {
-      info.open(map, marker);
-    });
-
-    markers.push(marker);
+    return (
+      name.includes(nameQuery) &&
+      city.includes(cityQuery) &&
+      rating >= minRating
+    );
   });
+
+  placesContainer.innerHTML = "";
+
+  filtered.forEach((place) => {
+    const card = document.createElement("div");
+    card.className = "place-card";
+
+    card.innerHTML = `
+      <h3>${place.name}</h3>
+      <p><strong>Address:</strong> ${place.vicinity || "N/A"}</p>
+      <p><strong>Rating:</strong> ${place.rating || "N/A"}</p>
+    `;
+
+    placesContainer.appendChild(card);
+  });
+
+  if (filtered.length === 0) {
+    placesContainer.innerHTML = `<p class="no-results">No places found matching your filters.</p>`;
+  }
 }
 
+// Initial load
 fetchAndRender();
