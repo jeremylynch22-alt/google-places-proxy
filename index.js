@@ -95,6 +95,7 @@ const GOOGLE_API = "https://maps.googleapis.com/maps/api/place/nearbysearch/json
 async function fetchAllPagesForZip(zip, key) {
   const center = zipCenters[zip];
   if (!center) return [];
+
   const allResults = [];
 
   let url = GOOGLE_API;
@@ -107,43 +108,61 @@ async function fetchAllPagesForZip(zip, key) {
   };
 
   let retries = 0;
-  do {
-    const response = await axios.get(url, { params });
-    const { results, next_page_token } = response.data;
-    allResults.push(...results);
-    if (!next_page_token) break;
-    retries++;
-    await new Promise((res) => setTimeout(res, 2000));
-    params.pagetoken = next_page_token;
-  } while (retries < 3);
+  try {
+    do {
+      const response = await axios.get(url, { params });
+      const { results, next_page_token, status, error_message } = response.data;
+
+      if (status !== "OK" && status !== "ZERO_RESULTS") {
+        console.error(`Google Places error [${status}]: ${error_message}`);
+        break;
+      }
+
+      allResults.push(...results);
+      if (!next_page_token) break;
+
+      retries++;
+      await new Promise((res) => setTimeout(res, 2000));
+      params.pagetoken = next_page_token;
+    } while (retries < 3);
+  } catch (err) {
+    console.error(`Fetch failed for ZIP ${zip}:`, err.message);
+  }
 
   return allResults;
 }
 
+
 app.get("/api/google-places", async (req, res) => {
-  const { region = "All" } = req.query;
-  const key = process.env.GOOGLE_API_KEY;
+  try {
+    const { region = "All" } = req.query;
+    const key = process.env.GOOGLE_API_KEY;
 
-  const zips = region === "All"
-    ? Object.keys(zipCenters)
-    : regionToZips[region] || [];
+    const zips = region === "All"
+      ? Object.keys(zipCenters)
+      : regionToZips[region] || [];
 
-  const allResults = [];
+    const allResults = [];
 
-  for (const zip of zips) {
-    const doc = await db.collection("places").doc(zip).get();
-    if (doc.exists) {
-      allResults.push(...doc.data().places);
-    } else {
-      const results = await fetchAllPagesForZip(zip, key);
-      await db.collection("places").doc(zip).set({ places: results });
-      allResults.push(...results);
+    for (const zip of zips) {
+      const doc = await db.collection("places").doc(zip).get();
+      if (doc.exists) {
+        allResults.push(...doc.data().places);
+      } else {
+        const results = await fetchAllPagesForZip(zip, key);
+        await db.collection("places").doc(zip).set({ places: results });
+        allResults.push(...results);
+      }
     }
-  }
 
-  const deduped = Array.from(new Map(allResults.map(p => [p.place_id, p])).values());
-  res.json({ places: deduped });
+    const deduped = Array.from(new Map(allResults.map(p => [p.place_id, p])).values());
+    res.json({ places: deduped });
+  } catch (err) {
+    console.error("Error in /api/google-places:", err.message);
+    res.status(500).json({ error: "Failed to fetch data from server." });
+  }
 });
+
 
 app.get("/demo", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "demo.html"));
