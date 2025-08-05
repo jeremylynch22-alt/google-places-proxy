@@ -1,25 +1,11 @@
-// script.js
-
+// public/script.js
 const regionSelect = document.getElementById("region");
-const ratingFilter = document.getElementById("ratingFilter");
-const nameFilter = document.getElementById("nameFilter");
-const cityFilter = document.getElementById("cityFilter");
-const placesContainer = document.getElementById("places");
-const loading = document.getElementById("loading");
+const resultsContainer = document.getElementById("results");
+const loader = document.getElementById("loader");
 
-regionSelect.addEventListener("change", fetchAndRender);
-ratingFilter.addEventListener("input", renderPlaces);
-nameFilter.addEventListener("input", renderPlaces);
-cityFilter.addEventListener("input", renderPlaces);
-
-let allPlaces = [];
-
-async function fetchAndRender() {
-  const region = regionSelect.value;
-
-  // Show loading animation
-  loading.classList.add("show");
-  placesContainer.innerHTML = "";
+async function fetchAndRender(region = "All") {
+  resultsContainer.innerHTML = "";
+  loader.style.display = "block";
 
   try {
     const response = await fetch(`/api/google-places?region=${region}`);
@@ -29,53 +15,38 @@ async function fetchAndRender() {
       throw new Error("No places returned from API.");
     }
 
-    allPlaces = data.places;
-    renderPlaces();
-  } catch (error) {
-    console.error("Failed to fetch places:", error);
-    placesContainer.innerHTML = `<p class="error">Failed to load results: ${error.message}</p>`;
+    data.places.forEach(place => {
+      const card = document.createElement("div");
+      card.className = "place-card";
+
+      // Construct photo URL
+      let photoUrl = "https://via.placeholder.com/400x200?text=No+Image";
+      if (place.photos && place.photos.length > 0) {
+        const ref = place.photos[0].photo_reference;
+        photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${ref}&key=${GOOGLE_API_KEY}`;
+      }
+
+      card.innerHTML = `
+        <img class="place-photo" src="${photoUrl}" alt="${place.name}">
+        <div class="place-info">
+          <h3>${place.name}</h3>
+          <p>${place.vicinity || "No address available"}</p>
+          <p>Rating: ${place.rating || "N/A"} (${place.user_ratings_total || 0} reviews)</p>
+        </div>
+      `;
+
+      resultsContainer.appendChild(card);
+    });
+  } catch (err) {
+    console.error("Failed to fetch places:", err.message);
+    resultsContainer.innerHTML = `<p style="color: red;">⚠️ Failed to load results: ${err.message}</p>`;
   } finally {
-    // Hide loading animation
-    loading.classList.remove("show");
+    loader.style.display = "none";
   }
 }
 
-function renderPlaces() {
-  const minRating = parseFloat(ratingFilter.value) || 0;
-  const nameQuery = nameFilter.value.toLowerCase();
-  const cityQuery = cityFilter.value.toLowerCase();
+regionSelect.addEventListener("change", () => {
+  fetchAndRender(regionSelect.value);
+});
 
-  const filtered = allPlaces.filter((place) => {
-    const name = place.name?.toLowerCase() || "";
-    const city = place.vicinity?.toLowerCase() || "";
-    const rating = parseFloat(place.rating || 0);
-
-    return (
-      name.includes(nameQuery) &&
-      city.includes(cityQuery) &&
-      rating >= minRating
-    );
-  });
-
-  placesContainer.innerHTML = "";
-
-  filtered.forEach((place) => {
-    const card = document.createElement("div");
-    card.className = "place-card";
-
-    card.innerHTML = `
-      <h3>${place.name}</h3>
-      <p><strong>Address:</strong> ${place.vicinity || "N/A"}</p>
-      <p><strong>Rating:</strong> ${place.rating || "N/A"}</p>
-    `;
-
-    placesContainer.appendChild(card);
-  });
-
-  if (filtered.length === 0) {
-    placesContainer.innerHTML = `<p class="no-results">No places found matching your filters.</p>`;
-  }
-}
-
-// Initial load
-fetchAndRender();
+fetchAndRender(); // Initial load

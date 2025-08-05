@@ -1,40 +1,27 @@
-<!-- public/demo.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jerberto's 🌮 San Diego Mexican Food Finder</title>
+  <title>Jerberto's San Diego Mexican Food Map</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Jerberto's 🌮 San Diego Mexican Food Finder</h1>
+  <h1>Mexican Restaurants in San Diego County</h1>
 
-  <div class="filters">
-    <label for="region">Region:</label>
-    <select id="region">
-      <option value="All">All</option>
-      <option value="North Coastal">North Coastal</option>
-      <option value="North Inland">North Inland</option>
-      <option value="North Central">North Central</option>
-      <option value="East">East</option>
-      <option value="Central">Central</option>
-      <option value="South">South</option>
-    </select>
+  <label for="region">Select a Region:</label>
+  <select id="region">
+    <option value="All">All</option>
+    <option value="North Coastal">North Coastal</option>
+    <option value="North Inland">North Inland</option>
+    <option value="North Central">North Central</option>
+    <option value="East">East</option>
+    <option value="Central">Central</option>
+    <option value="South">South</option>
+  </select>
 
-    <label for="ratingFilter">Min Rating:</label>
-    <input type="number" id="ratingFilter" min="0" max="5" step="0.1" placeholder="e.g., 4.0" />
-
-    <label for="nameFilter">Name:</label>
-    <input type="text" id="nameFilter" placeholder="Restaurant name" />
-
-    <label for="cityFilter">City:</label>
-    <input type="text" id="cityFilter" placeholder="City" />
-  </div>
-
-  <div id="loading" class="loading-spinner">Loading places...</div>
-
-  <div id="places"></div>
+  <div id="loader"><div class="spinner"></div></div>
+  <div id="results"></div>
 
   <script src="script.js"></script>
 </body>

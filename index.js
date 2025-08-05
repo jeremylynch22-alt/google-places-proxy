@@ -228,4 +228,27 @@ app.get("/api/google-places", async (req, res) => {
   }
 });
 
+app.get("/api/photo", async (req, res) => {
+  const { ref } = req.query;
+  if (!ref) return res.status(400).send("Missing photo_reference");
+  
+  const url = `https://maps.googleapis.com/maps/api/place/photo`;
+  try {
+    const response = await axios.get(url, {
+      responseType: "stream",
+      params: {
+        maxwidth: 400,
+        photoreference: ref,
+        key: process.env.GOOGLE_API_KEY,
+      },
+    });
+
+    res.setHeader("Content-Type", response.headers["content-type"]);
+    response.data.pipe(res);
+  } catch (err) {
+    console.error("Photo fetch error:", err.message);
+    res.status(500).send("Error loading photo");
+  }
+});
+
 app.listen(5001, () => console.log("Proxy running on port 5001"));
