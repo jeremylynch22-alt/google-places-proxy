@@ -36,24 +36,42 @@ toggleMapBtn.addEventListener("click", () => {
   }
 });
 
-async function fetchAndRender(region = "All") {
-  try {
-    const res = await fetch(`/api/google-places?region=${region}`);
-    if (!res.ok) throw new Error(`Server returned ${res.status}`);
-    const data = await res.json();
+async function fetchAndRender(region) {
+  const loading = document.getElementById("loading");
+  const container = document.getElementById("results");
 
-    if (!data.places || data.places.length === 0) {
-      throw new Error("No places returned from API.");
+  try {
+    loading.classList.remove("hidden"); // show loading spinner
+    container.innerHTML = ""; // clear existing cards
+
+    const response = await fetch(`/api/google-places?region=${region}`);
+    const data = await response.json();
+    const places = data.places;
+
+    if (!places || !places.length) {
+      container.innerHTML = "<p>No results found.</p>";
+      return;
     }
 
-    currentData = data.places;
-    currentPage = 1;
-    renderResults();
+    places.forEach(place => {
+      const card = document.createElement("div");
+      card.className = "restaurant-card";
+      card.innerHTML = `
+        <h3>${place.name}</h3>
+        <p>${place.vicinity || place.formatted_address || "No address"}</p>
+        <p>Google Rating: ${place.rating || "N/A"}</p>
+      `;
+      container.appendChild(card);
+    });
+
   } catch (err) {
-    console.error("Failed to fetch places:", err.message);
-    document.getElementById("results").innerHTML = `<p style="color:red;">⚠️ Failed to load results: ${err.message}</p>`;
+    console.error("Failed to fetch places:", err);
+    container.innerHTML = "<p>There was an error loading data.</p>";
+  } finally {
+    loading.classList.add("hidden"); // always hide loading spinner
   }
 }
+
 
 
 function renderResults() {
