@@ -1,128 +1,52 @@
+<!-- public/demo.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Jerberto's 🌮 San Diego Mexican Food Ratings</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jerberto's 🌮 San Diego Mexican Food Finder</title>
+  <link rel="stylesheet" href="styles.css" />
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 1rem;
-      background: #f4f4f4;
+      padding: 1rem;
     }
-
-    #controls {
+    .filters {
       margin-bottom: 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      justify-content: center;
     }
-
-    label {
-      font-weight: bold;
+    .filters label,
+    .filters input,
+    .filters select {
       margin-right: 0.5rem;
     }
-
-    select,
-    button {
-      padding: 0.4rem;
-      font-size: 1rem;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-
-    .card-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-
-    .place {
-      border: 1px solid #ddd;
-      padding: 0.75rem;
-      border-radius: 8px;
-      background-color: white;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-
-    .place:hover {
-      background-color: rgb(222, 222, 222);
-    }
-
-    .place img {
-      width: 100%;
-      height: 160px;
-      object-fit: cover;
-      border-radius: 4px;
-      margin-bottom: 0.5rem;
-    }
-
-    .place-name {
-      font-size: 1.25rem;
+    .loading-spinner {
+      display: none;
+      margin: 1rem 0;
       font-weight: bold;
-      margin-bottom: 0.3rem;
     }
-
-    .jerberto-rating {
-      font-style: italic;
-      margin-bottom: 0.3rem;
-    }
-
-    .google-rating,
-    .place-address {
-      font-size: 0.9rem;
-      color: #555;
-    }
-
-    .pagination {
-      margin-top: 1rem;
-      text-align: center;
-    }
-
-    .pagination button {
-      margin: 0 5px;
-    }
-
-    #map {
-      display: none;
-      width: 100%;
-      height: 500px;
-      margin-top: 1rem;
-    }
-
-    #loading {
-      display: none;
-      text-align: center;
-      font-size: 1.2rem;
-      margin: 1rem;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    #loading.show {
+    .loading-spinner.show {
       display: block;
-      opacity: 1;
     }
-
-    @media (max-width: 400px) {
-      .card-container {
-        grid-template-columns: 1fr;
-      }
+    .place-card {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      background: #f9f9f9;
+    }
+    .no-results, .error {
+      color: #cc0000;
+      font-weight: bold;
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
-  <h1>Jerberto's 🌮 San Diego Mexican Food Ratings</h1>
+  <h1>Jerberto's 🌮 San Diego Mexican Food Finder</h1>
 
-  <div id="loading"><span>🌯</span> Loading results...</div>
-
-  <div id="controls">
-    <label for="cityFilter">Region:</label>
-    <select id="cityFilter">
+  <div class="filters">
+    <label for="region">Region:</label>
+    <select id="region">
       <option value="All">All</option>
       <option value="North Coastal">North Coastal</option>
       <option value="North Inland">North Inland</option>
@@ -131,28 +55,21 @@
       <option value="Central">Central</option>
       <option value="South">South</option>
     </select>
-    <button id="toggleMapBtn">🗺️ Toggle Map View</button>
+
+    <label for="ratingFilter">Min Rating:</label>
+    <input type="number" id="ratingFilter" min="0" max="5" step="0.1" placeholder="e.g., 4.0" />
+
+    <label for="nameFilter">Name:</label>
+    <input type="text" id="nameFilter" placeholder="Restaurant name" />
+
+    <label for="cityFilter">City:</label>
+    <input type="text" id="cityFilter" placeholder="City" />
   </div>
 
-  <div id="map"></div>
-  <div class="card-container" id="results"></div>
-  <div class="pagination" id="pagination"></div>
+  <div id="loading" class="loading-spinner">Loading places...</div>
 
-  <!-- Load env vars -->
-  <script src="/env.js"></script>
+  <div id="places"></div>
 
-  <!-- Load Maps API dynamically -->
-  <script>
-    window.addEventListener("load", () => {
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${window.GOOGLE_MAPS_API_KEY}`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    });
-  </script>
-
-  <!-- Load main app -->
-  <script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
