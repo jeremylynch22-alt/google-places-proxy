@@ -145,4 +145,8 @@ app.get("/api/google-places", async (req, res) => {
   res.json({ places: deduped });
 });
 
+app.get("/demo", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "demo.html"));
+});
+
 app.listen(5001, () => console.log("Proxy running on port 5001"));
