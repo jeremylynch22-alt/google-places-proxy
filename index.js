@@ -152,7 +152,7 @@ for (const [region, zips] of Object.entries(regionToZips)) {
   });
 }
 
-const radius = 1500;
+const radius = 25000;
 const GOOGLE_API = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
 
 async function fetchAllPagesForZip(zip, key) {
