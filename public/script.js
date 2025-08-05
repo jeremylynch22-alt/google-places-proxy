@@ -36,22 +36,25 @@ toggleMapBtn.addEventListener("click", () => {
   }
 });
 
-async function fetchAndRender() {
-  loadingIndicator.classList.add("show");
+async function fetchAndRender(region = "All") {
   try {
-    const res = await fetch(`/api/google-places?region=${currentRegion}`);
-    const json = await res.json();
-    currentData = json.places;
-    totalPages = Math.ceil(currentData.length / 20);
+    const res = await fetch(`/api/google-places?region=${region}`);
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const data = await res.json();
+
+    if (!data.places || data.places.length === 0) {
+      throw new Error("No places returned from API.");
+    }
+
+    currentData = data.places;
+    currentPage = 1;
     renderResults();
-    renderPagination();
-    if (mapElement.style.display === "block") renderMap();
   } catch (err) {
-    console.error("Failed to fetch places:", err);
-  } finally {
-    loadingIndicator.classList.remove("show");
+    console.error("Failed to fetch places:", err.message);
+    document.getElementById("results").innerHTML = `<p style="color:red;">⚠️ Failed to load results: ${err.message}</p>`;
   }
 }
+
 
 function renderResults() {
   const pageData = currentData.slice((currentPage - 1) * 20, currentPage * 20);

@@ -15,6 +15,7 @@ app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
 const zipCenters = {
+  // ... your full ZIP/lat/lng dictionary pasted here exactly as you've compiled it
   "92007": { lat: 33.0214, lng: -117.2831 },
   "92008": { lat: 33.1508, lng: -117.3133 },
   "92009": { lat: 33.0957, lng: -117.244 },
@@ -77,7 +78,7 @@ const zipCenters = {
   "92154": { lat: 32.578, lng: -116.9662 },
   "92155": { lat: 32.6715, lng: -117.1671 },
   "92161": { lat: 32.8789, lng: -117.237 },
-  "92173": { lat: 32.5555, lng: -117.0511 }
+  "92173": { lat: 32.5555, lng: -117.0511 }  
 };
 
 const regionToZips = {
@@ -89,13 +90,21 @@ const regionToZips = {
   "South": ["91902", "91910", "91911", "91913", "91914", "91915", "91932", "91950", "92118", "92135", "92154", "92155", "92173"]
 };
 
+// Log missing ZIP centers
+for (const [region, zips] of Object.entries(regionToZips)) {
+  zips.forEach(zip => {
+    if (!zipCenters[zip]) {
+      console.warn(`⚠️ Missing center for ZIP ${zip} in region ${region}`);
+    }
+  });
+}
+
 const radius = 1500;
 const GOOGLE_API = "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
 
 async function fetchAllPagesForZip(zip, key) {
   const center = zipCenters[zip];
   if (!center) return [];
-
   const allResults = [];
 
   let url = GOOGLE_API;
@@ -108,30 +117,23 @@ async function fetchAllPagesForZip(zip, key) {
   };
 
   let retries = 0;
-  try {
-    do {
+  do {
+    try {
       const response = await axios.get(url, { params });
-      const { results, next_page_token, status, error_message } = response.data;
-
-      if (status !== "OK" && status !== "ZERO_RESULTS") {
-        console.error(`Google Places error [${status}]: ${error_message}`);
-        break;
-      }
-
-      allResults.push(...results);
+      const { results, next_page_token } = response.data;
+      if (results) allResults.push(...results);
       if (!next_page_token) break;
-
       retries++;
       await new Promise((res) => setTimeout(res, 2000));
       params.pagetoken = next_page_token;
-    } while (retries < 3);
-  } catch (err) {
-    console.error(`Fetch failed for ZIP ${zip}:`, err.message);
-  }
+    } catch (err) {
+      console.error(`Error fetching Google Places for ZIP ${zip}:`, err.message);
+      break;
+    }
+  } while (retries < 3);
 
   return allResults;
 }
-
 
 app.get("/api/google-places", async (req, res) => {
   try {
@@ -145,27 +147,32 @@ app.get("/api/google-places", async (req, res) => {
     const allResults = [];
 
     for (const zip of zips) {
-      const doc = await db.collection("places").doc(zip).get();
-      if (doc.exists) {
-        allResults.push(...doc.data().places);
-      } else {
-        const results = await fetchAllPagesForZip(zip, key);
-        await db.collection("places").doc(zip).set({ places: results });
-        allResults.push(...results);
+      const center = zipCenters[zip];
+      if (!center) {
+        console.warn(`Skipping ZIP ${zip} — no coordinates available`);
+        continue;
+      }
+
+      try {
+        const doc = await db.collection("places").doc(zip).get();
+        if (doc.exists) {
+          allResults.push(...doc.data().places);
+        } else {
+          const results = await fetchAllPagesForZip(zip, key);
+          await db.collection("places").doc(zip).set({ places: results });
+          allResults.push(...results);
+        }
+      } catch (innerErr) {
+        console.error(`Firestore or API error for ZIP ${zip}:`, innerErr.message);
       }
     }
 
     const deduped = Array.from(new Map(allResults.map(p => [p.place_id, p])).values());
     res.json({ places: deduped });
   } catch (err) {
-    console.error("Error in /api/google-places:", err.message);
-    res.status(500).json({ error: "Failed to fetch data from server." });
+    console.error("Fatal server error in /api/google-places:", err.message);
+    res.status(500).json({ error: "Internal Server Error" });
   }
-});
-
-
-app.get("/demo", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "demo.html"));
 });
 
 app.listen(5001, () => console.log("Proxy running on port 5001"));
