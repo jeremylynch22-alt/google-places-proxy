@@ -228,16 +228,29 @@ app.get("/api/google-places", async (req, res) => {
   }
 });
 
-app.get("/api/photo", async (req, res) => {
-  const { ref } = req.query;
-  const key = process.env.GOOGLE_API_KEY;
+// Place this in your Express app setup
+app.get('/api/photo', async (req, res) => {
+  const { photoRef } = req.query;
+  const apiKey = process.env.GOOGLE_API_KEY;
 
-  if (!ref || !key) {
-    return res.status(400).send("Missing photo reference or API key");
+  if (!photoRef) {
+    return res.status(400).send('Missing photoRef');
   }
 
-  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${ref}&key=${key}`;
-  res.redirect(photoUrl);
+  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${photoRef}&key=${apiKey}`;
+
+  try {
+    const response = await fetch(photoUrl);
+    if (!response.ok) {
+      return res.status(400).send("Failed to fetch photo");
+    }
+
+    res.setHeader('Content-Type', response.headers.get('content-type'));
+    response.body.pipe(res);
+  } catch (err) {
+    console.error("Photo proxy error:", err);
+    res.status(500).send("Error fetching photo");
+  }
 });
 
 
