@@ -76,15 +76,17 @@ function renderPlaces() {
     const card = document.createElement("div");
     card.className = "card";
 
+    // Fallbacks
     const photoUrl = place.photoRef
       ? `/api/photo?ref=${place.photoRef}`
       : "https://via.placeholder.com/150";
+    const address = place.address || place.vicinity || place.formatted_address || "Address unavailable";
 
     card.innerHTML = `
-      <img src="${photoUrl}" alt="${place.name}" />
+      <img src="${photoUrl}" alt="${place.name}" onerror="this.src='https://via.placeholder.com/150'" />
       <div class="card-body">
         <h3>${place.name}</h3>
-        <p>${place.address || "Address unavailable"}</p>
+        <p>${address}</p>
         <p>Google Rating: ${place.rating || "N/A"}</p>
         ${place.jerbertoRating ? `<p>Jerberto's Rating: ${place.jerbertoRating}</p>` : ""}
         ${place.videoUrl ? `<span class="video-icon" onclick="showVideo('${place.videoUrl}')">📹</span>` : ""}
@@ -103,6 +105,7 @@ function renderPlaces() {
     }
   });
 }
+
 
 function showVideo(url) {
   const modal = document.createElement("div");

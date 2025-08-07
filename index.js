@@ -1,133 +1,92 @@
 const express = require("express");
 const fetch = require("node-fetch");
 const admin = require("firebase-admin");
-const path = require("path");
-require("dotenv").config();
+const cors = require("cors");
+const zipCenters = require("./zipCenters");
+const regionToZips = require("./regionToZips");
 
 const app = express();
-const port = process.env.PORT || 5001;
+app.use(cors());
 
-// Initialize Firebase Admin with Firestore
-admin.initializeApp({
-  credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)),
-});
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+if (!GOOGLE_API_KEY) throw new Error("Missing GOOGLE_API_KEY");
+
+const serviceAccountJSON = process.env.FIREBASE_SERVICE_ACCOUNT;
+if (!serviceAccountJSON) throw new Error("Missing FIREBASE_SERVICE_ACCOUNT");
+
+const serviceAccount = JSON.parse(serviceAccountJSON);
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+}
+
 const db = admin.firestore();
 
-app.use(express.static("public"));
-
-// Local ZIP/Region maps
-const regionToZips = require("./regionToZips");
-const zipCenters = require("./zipCenters");
-
-// Google Places API - main fetch with caching
 app.get("/api/google-places", async (req, res) => {
   const region = req.query.region || "All";
-  let places = [];
+  const zips = region === "All" ? Object.keys(zipCenters) : regionToZips[region] || [];
 
-  const zips = region === "All"
-    ? Object.values(regionToZips).flat()
-    : regionToZips[region] || [];
+  const places = [];
 
-  for (const zip of zips) {
-    const center = zipCenters[zip];
-    if (!center) {
-      console.warn(`⚠️ Missing center for ZIP ${zip} in region ${region}`);
-      continue;
-    }
-
-    try {
-      // Try fetching cached data
-      const docRef = db.collection("places").doc(zip);
-      const doc = await docRef.get();
-
-      if (doc.exists) {
-        console.log(`✅ Using cached places for ZIP ${zip}`);
-        places.push(...doc.data().places);
+  try {
+    for (const zip of zips) {
+      const cacheDoc = await db.collection("places").doc(zip).get();
+      if (cacheDoc.exists) {
+        places.push(...(cacheDoc.data().places || []));
         continue;
       }
 
-      console.log(`⏳ Fetching from Google for ZIP ${zip}...`);
-      let results = [];
-      let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=${process.env.GOOGLE_API_KEY}&location=${center.lat},${center.lng}&radius=1500&type=restaurant&keyword=mexican`;
+      const { lat, lng } = zipCenters[zip];
+      const radius = 8000;
 
-      while (url) {
-        const response = await fetch(url);
-        const json = await response.json();
+      const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&keyword=mexican&key=${GOOGLE_API_KEY}`;
+      const response = await fetch(url);
+      const data = await response.json();
 
-        if (json.results) {
-          results.push(...json.results);
-        }
-
-        if (json.next_page_token) {
-          await new Promise((r) => setTimeout(r, 2000)); // Delay for token to activate
-          url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=${process.env.GOOGLE_API_KEY}&pagetoken=${json.next_page_token}`;
-        } else {
-          url = null;
-        }
+      if (!data.results || !Array.isArray(data.results)) {
+        console.warn(`Unexpected response for ZIP ${zip}:`, data);
+        continue;
       }
 
-      // Cache in Firestore
-      await docRef.set({ places: results });
-      places.push(...results);
+      const formatted = data.results.map((place) => ({
+        name: place.name,
+        rating: place.rating,
+        address: place.vicinity || place.formatted_address,
+        photoRef: place.photos?.[0]?.photo_reference,
+        location: place.geometry?.location,
+        jerbertoRating: null,
+        videoUrl: null,
+      }));
 
-    } catch (err) {
-      console.error(`Firestore or API error for ZIP ${zip}:`, err.message);
+      places.push(...formatted);
+
+      await db.collection("places").doc(zip).set({ places: formatted });
     }
-  }
 
-  if (places.length === 0) {
-    return res.status(500).json({ error: "No places returned from API." });
+    res.json({ places });
+  } catch (error) {
+    console.error("API error:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
   }
-
-  res.json({ places });
 });
 
-// Proxy photo requests from Google
 app.get("/api/photo", async (req, res) => {
-  const ref = req.query.photoRef;
-  if (!ref) return res.status(400).send("Missing photoRef");
+  const ref = req.query.ref;
+  if (!ref) return res.status(400).send("Missing photo reference");
 
-  const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${ref}&key=${process.env.GOOGLE_API_KEY}`;
-
+  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photoreference=${ref}&key=${GOOGLE_API_KEY}`;
   try {
-    const response = await fetch(url);
-    response.body.pipe(res);
+    const response = await fetch(photoUrl);
+    const buffer = await response.buffer();
+    res.set("Content-Type", "image/jpeg");
+    res.send(buffer);
   } catch (err) {
-    console.error("Photo proxy error:", err.message);
-    res.status(500).send("Failed to load photo");
+    console.error("Photo fetch error:", err);
+    res.status(500).send("Error retrieving photo");
   }
 });
 
-// Fetch video URL from Firestore for a place
-app.get("/api/video", async (req, res) => {
-  const placeId = req.query.place_id;
-  if (!placeId) return res.status(400).send("Missing place_id");
-
-  try {
-    const snapshot = await db.collection("videos").where("place_id", "==", placeId).get();
-    if (snapshot.empty) return res.status(404).json({});
-
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-    res.json({ video_url: data.video_url });
-  } catch (err) {
-    console.error("Firestore error:", err.message);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-// Proxy Google Maps JS API with secure key injection
-app.get("/maps.js", (req, res) => {
-  const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
-    return res.status(500).send("Missing GOOGLE_API_KEY");
-  }
-
-  const scriptUrl = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
-
-  res.setHeader("Content-Type", "application/javascript");
-  res.redirect(scriptUrl);
-});
-
-
-app.listen(port, () => console.log(`✅ Proxy running on port ${port}`));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
