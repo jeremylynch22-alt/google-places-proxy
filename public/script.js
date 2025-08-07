@@ -35,10 +35,16 @@ async function fetchAndRender() {
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    const places = await response.json();
+    let places;
+    try {
+      places = await response.json();
+    } catch (parseError) {
+      const raw = await response.text();
+      throw new Error(`Failed to parse JSON. Raw response: ${raw}`);
+    }
 
-    if (!places || !Array.isArray(places)) {
-      throw new Error("Invalid API response");
+    if (!Array.isArray(places)) {
+      throw new Error(`Expected an array but got: ${JSON.stringify(places)}`);
     }
 
     allPlaces = places.filter(
@@ -50,7 +56,7 @@ async function fetchAndRender() {
     renderPlaces();
   } catch (err) {
     console.error("Failed to fetch places:", err);
-    results.innerHTML = `<p class="error">Failed to load results: ${err.message}</p>`;
+    results.innerHTML = `<p>Failed to load results: ${err.message}</p>`;
   } finally {
     loading.style.display = "none";
   }
