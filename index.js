@@ -116,11 +116,17 @@ app.get("/api/video", async (req, res) => {
   }
 });
 
-// In index.js
-app.get('/maps.js', (req, res) => {
+// Proxy Google Maps JS API with secure key injection
+app.get("/maps.js", (req, res) => {
   const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey) return res.status(500).send('Missing Google API Key');
-  res.redirect(`https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`);
+  if (!apiKey) {
+    return res.status(500).send("Missing GOOGLE_API_KEY");
+  }
+
+  const scriptUrl = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
+
+  res.setHeader("Content-Type", "application/javascript");
+  res.redirect(scriptUrl);
 });
 
 

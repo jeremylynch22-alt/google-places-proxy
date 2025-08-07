@@ -5,14 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Jerberto's San Diego Mexican Food Map</title>
   <link rel="stylesheet" href="styles.css" />
-  <script defer src="/maps.js"></script> <!-- ✅ Now proxied through your backend -->
-  <script defer src="script.js"></script>
 </head>
-
 <body>
   <h1>Mexican Restaurants in San Diego County</h1>
 
-  <div class="filters">
+  <!-- Filter bar -->
+  <div class="filter-bar">
     <label for="region">Region:</label>
     <select id="region">
       <option value="All">All</option>
@@ -26,25 +24,25 @@
 
     <label for="rating">Min Rating:</label>
     <select id="rating">
-      <option value="0">Any</option>
-      <option value="3.0">3.0+</option>
-      <option value="3.5">3.5+</option>
-      <option value="4.0">4.0+</option>
+      <option value="0">All</option>
+      <option value="3">3+</option>
+      <option value="4">4+</option>
       <option value="4.5">4.5+</option>
     </select>
 
-    <label for="search">Search Name:</label>
-    <input type="text" id="search" placeholder="e.g., El Pollo Loco" />
+    <label for="search">Name:</label>
+    <input type="text" id="search" placeholder="Search name..." />
 
-    <button id="toggleView">Toggle Map/List</button>
+    <button id="toggleView">Toggle Map View</button>
   </div>
 
+  <!-- Loading and content -->
   <div id="loading" class="loading-spinner" style="display: none;">Loading places...</div>
-  <div id="results" class="results-grid"></div>
   <div id="map" style="display: none; height: 500px;"></div>
+  <div id="results"></div>
 
+  <!-- Scripts -->
   <script src="script.js" defer></script>
-  <script defer src="/maps.js"></script>
+  <script async defer src="/maps.js"></script>
 </body>
-
 </html>
