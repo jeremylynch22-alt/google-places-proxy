@@ -35,16 +35,18 @@ async function fetchAndRender() {
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    let places;
+    let data;
     try {
-      places = await response.json();
+      data = await response.json();
     } catch (parseError) {
       const raw = await response.text();
       throw new Error(`Failed to parse JSON. Raw response: ${raw}`);
     }
 
-    if (!Array.isArray(places)) {
-      throw new Error(`Expected an array but got: ${JSON.stringify(places)}`);
+    const places = data.places;
+
+    if (!places || !Array.isArray(places)) {
+      throw new Error(`Expected an array but got: ${JSON.stringify(data)}`);
     }
 
     allPlaces = places.filter(
