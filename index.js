@@ -90,5 +90,14 @@ app.get("/api/photo", async (req, res) => {
   }
 });
 
+app.get("/api/maps-key", (req, res) => {
+  const key = process.env.GOOGLE_API_KEY;
+  if (!key) {
+    return res.status(500).json({ error: "API key not configured" });
+  }
+  res.json({ key });
+});
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
