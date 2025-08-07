@@ -7,6 +7,8 @@ const regionToZips = require("./regionToZips");
 
 const app = express();
 app.use(cors());
+app.use(express.static("public"));
+
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 if (!GOOGLE_API_KEY) throw new Error("Missing GOOGLE_API_KEY");
