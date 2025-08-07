@@ -29,6 +29,12 @@ async function fetchAndRender() {
 
   try {
     const response = await fetch(`/api/google-places?region=${region}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
     const places = await response.json();
 
     if (!places || !Array.isArray(places)) {
@@ -44,7 +50,7 @@ async function fetchAndRender() {
     renderPlaces();
   } catch (err) {
     console.error("Failed to fetch places:", err);
-    results.innerHTML = `<p>Failed to load results: ${err.message}</p>`;
+    results.innerHTML = `<p class="error">Failed to load results: ${err.message}</p>`;
   } finally {
     loading.style.display = "none";
   }
