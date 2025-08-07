@@ -1,85 +1,132 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const regionSelect = document.getElementById("region");
-  const loadingDiv = document.getElementById("loading");
-  const resultsDiv = document.getElementById("results");
+// script.js
 
-  async function fetchAndRender() {
-    const region = regionSelect.value;
-    loadingDiv.classList.remove("hidden");
-    resultsDiv.innerHTML = "";
+let map;
+let allPlaces = [];
+let markers = [];
 
-    try {
-      const response = await fetch(`/api/google-places?region=${region}`);
-      const data = await response.json();
+function initMap() {
+  map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 9,
+    center: { lat: 32.7157, lng: -117.1611 }, // San Diego
+  });
+}
 
-      if (!data.places || data.places.length === 0) {
-        resultsDiv.innerHTML = "<p>No places found.</p>";
-        return;
-      }
+async function fetchAndRender() {
+  const loading = document.getElementById("loading");
+  const results = document.getElementById("results");
+  const regionEl = document.getElementById("region");
+  const ratingEl = document.getElementById("rating");
+  const searchEl = document.getElementById("search");
 
-      for (const place of data.places) {
-        const card = document.createElement("div");
-        card.className = "card";
+  if (!loading || !results || !regionEl || !ratingEl || !searchEl) return;
 
-        const photoRef = place.photos?.[0]?.photo_reference;
-        const photoUrl = photoRef
-          ? `/api/photo?photoRef=${photoRef}`
-          : "https://via.placeholder.com/400x200?text=No+Image";
+  loading.style.display = "block";
+  results.innerHTML = "";
 
-        // Fetch video URL from Firestore
-        let videoUrl = null;
-        try {
-          const videoResponse = await fetch(`/api/video?place_id=${place.place_id}`);
-          if (videoResponse.ok) {
-            const videoData = await videoResponse.json();
-            videoUrl = videoData.video_url;
-          }
-        } catch (e) {
-          console.warn("Video fetch failed for", place.name);
-        }
+  const region = regionEl.value;
+  const ratingFilter = parseFloat(ratingEl.value);
+  const searchQuery = searchEl.value.toLowerCase();
 
-        card.innerHTML = `
-          <img src="${photoUrl}" alt="${place.name}" />
-          <h2>${place.name}</h2>
-          <p><strong>Jerberto's Rating:</strong> ${
-            Math.round((place.rating || 0) * 20) / 20
-          } ⭐</p>
-          <p><strong>Google Rating:</strong> ${place.rating || "N/A"} (${place.user_ratings_total || 0} reviews)</p>
-          <p><strong>Address:</strong> ${place.vicinity}</p>
-          ${videoUrl ? '<button class="video-btn" data-url="' + videoUrl + '">🎥 Watch Video</button>' : ""}
-        `;
+  try {
+    const response = await fetch(`/api/google-places?region=${region}`);
+    const places = await response.json();
 
-        resultsDiv.appendChild(card);
-      }
-    } catch (err) {
-      console.error("Failed to fetch places:", err);
-      resultsDiv.innerHTML = "<p>Error loading places.</p>";
-    } finally {
-      loadingDiv.classList.add("hidden");
+    if (!places || !Array.isArray(places)) {
+      throw new Error("Invalid API response");
     }
+
+    allPlaces = places.filter(
+      (place) =>
+        (!place.rating || place.rating >= ratingFilter) &&
+        (!searchQuery || place.name.toLowerCase().includes(searchQuery))
+    );
+
+    renderPlaces();
+  } catch (err) {
+    console.error("Failed to fetch places:", err);
+    results.innerHTML = `<p>Failed to load results: ${err.message}</p>`;
+  } finally {
+    loading.style.display = "none";
   }
+}
 
-  regionSelect.addEventListener("change", fetchAndRender);
-  fetchAndRender();
+function renderPlaces() {
+  const results = document.getElementById("results");
+  if (!results) return;
 
-  // Modal handling
-  document.body.addEventListener("click", (e) => {
-    if (e.target.classList.contains("video-btn")) {
-      const url = e.target.getAttribute("data-url");
-      const modal = document.createElement("div");
-      modal.className = "modal";
-      modal.innerHTML = `
-        <div class="modal-content">
-          <span class="close">&times;</span>
-          <iframe src="${url}" frameborder="0" allowfullscreen></iframe>
-        </div>
-      `;
-      document.body.appendChild(modal);
+  results.innerHTML = "";
+  markers.forEach((m) => m.setMap(null));
+  markers = [];
 
-      modal.querySelector(".close").onclick = () => modal.remove();
-      modal.onclick = (event) => {
-        if (event.target === modal) modal.remove();
-      };
+  allPlaces.forEach((place) => {
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const photoUrl = place.photoRef
+      ? `/api/photo?ref=${place.photoRef}`
+      : "https://via.placeholder.com/150";
+
+    card.innerHTML = `
+      <img src="${photoUrl}" alt="${place.name}" />
+      <div class="card-body">
+        <h3>${place.name}</h3>
+        <p>${place.address || "Address unavailable"}</p>
+        <p>Google Rating: ${place.rating || "N/A"}</p>
+        ${place.jerbertoRating ? `<p>Jerberto's Rating: ${place.jerbertoRating}</p>` : ""}
+        ${place.videoUrl ? `<span class="video-icon" onclick="showVideo('${place.videoUrl}')">📹</span>` : ""}
+      </div>
+    `;
+
+    results.appendChild(card);
+
+    if (map && place.location) {
+      const marker = new google.maps.Marker({
+        position: place.location,
+        map,
+        title: place.name,
+      });
+      markers.push(marker);
     }
   });
+}
+
+function showVideo(url) {
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.innerHTML = `
+    <div class="modal-content">
+      <span class="close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+      <video controls autoplay>
+        <source src="${url}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const regionEl = document.getElementById("region");
+  const ratingEl = document.getElementById("rating");
+  const searchEl = document.getElementById("search");
+  const toggleViewEl = document.getElementById("toggleView");
+
+  if (regionEl) regionEl.addEventListener("change", fetchAndRender);
+  if (ratingEl) ratingEl.addEventListener("change", fetchAndRender);
+  if (searchEl) searchEl.addEventListener("input", fetchAndRender);
+  if (toggleViewEl) {
+    toggleViewEl.addEventListener("click", () => {
+      const mapDiv = document.getElementById("map");
+      const resultsDiv = document.getElementById("results");
+      const isMapVisible = mapDiv && mapDiv.style.display === "block";
+      if (mapDiv && resultsDiv) {
+        mapDiv.style.display = isMapVisible ? "none" : "block";
+        resultsDiv.style.display = isMapVisible ? "grid" : "none";
+      }
+    });
+  }
+
+  fetchAndRender();
 });
+
+window.initMap = initMap;
