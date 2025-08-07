@@ -116,4 +116,12 @@ app.get("/api/video", async (req, res) => {
   }
 });
 
+// In index.js
+app.get('/maps.js', (req, res) => {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) return res.status(500).send('Missing Google API Key');
+  res.redirect(`https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`);
+});
+
+
 app.listen(port, () => console.log(`✅ Proxy running on port ${port}`));

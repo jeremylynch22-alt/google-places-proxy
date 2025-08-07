@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jerberto's San Diego Mexican Food Ratings</title>
+  <title>Jerberto's San Diego Mexican Food Map</title>
   <link rel="stylesheet" href="styles.css" />
+  <script defer src="/maps.js"></script> <!-- ✅ Now proxied through your backend -->
+  <script defer src="script.js"></script>
 </head>
+
 <body>
   <h1>Mexican Restaurants in San Diego County</h1>
 
@@ -41,7 +44,7 @@
   <div id="map" style="display: none; height: 500px;"></div>
 
   <script src="script.js" defer></script>
-  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap"></script>
+  <script defer src="/maps.js"></script>
 </body>
 
 </html>
